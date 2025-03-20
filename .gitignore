@@ -1,0 +1,9 @@
+*.pdf
+*.svg
+*.png
+*.swp
+*.tmp
+*.nc
+*.txt
+__pycache__/
+
