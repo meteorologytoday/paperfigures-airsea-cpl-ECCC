@@ -17,7 +17,7 @@ params=(
 region_params=(
 #    NPACATL Orthographic  20 90 -250 20 
 #    NPAC    PlateCarree  -20 70 80 270 
-    NPACATL PlateCarree  20 70 -280 20 
+    NPACATL PlateCarree  0 65 -280 20 
 )
 region_nparams=6
 
