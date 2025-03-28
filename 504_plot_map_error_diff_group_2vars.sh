@@ -7,52 +7,23 @@ fig_fmt=svg
 batch_cnt_limit=10
 
 
-year_beg=1998
-year_end=2017
-
-
-
 days_per_window=5
 lead_windows=6
 
-
 params=(
-    surf_avg ci 0
-    surf_inst msl     0
-    UVTZ gh           850
-    UVTZ gh           500
-    AR IVT            0
-    surf_avg sst     0
-    surf_hf_avg mslhf 0
-    surf_hf_avg msshf 0
-
-
-#    AR IWV            0
-
-
-#    surf_hf_avg mslhf 0
-#    surf_hf_avg msshf 0
-#    UVTZ gh           500
-#    AR IVT_x          0
-#    AR IVT_y          0
-
+    surf_hf_avg mslhf 0  surf_inst msl 0
 )
 
 region_params=(
-    NPACATL PlateCarree  20 70 -250 20 
-    NPACATL Orthographic 20 90 -250 20 
-#    NPAC    PlateCarree 20 70 110 250
-#    NATL    PlateCarree 20 70 -90  20
-
-
-    #NH 20 90 30 389.99 
-#    WORLD -90 90 0 359.99
+#    NPACATL Orthographic  20 90 -250 20 
+#    NPAC    PlateCarree  -20 70 80 270 
+    NPACATL PlateCarree  20 70 -280 20 
 )
 region_nparams=6
 
-nparams=3
+nparams=6
 #for GEPS6_group in GEPS6sub1 GEPS6sub2 GEPS6 ; do
-for GEPS6_group in GEPS6sub1  ; do
+for GEPS6_group in GEPS6sub1 ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 
@@ -60,9 +31,18 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     varname="${params[$(( i * $nparams + 1 ))]}"
     level="${params[$(( i * $nparams + 2 ))]}"
 
+    cntr_ECCC_varset="${params[$(( i * $nparams + 3 ))]}"
+    cntr_varname="${params[$(( i * $nparams + 4 ))]}"
+    cntr_level="${params[$(( i * $nparams + 5 ))]}"
+
+
     echo ":: ECCC_varset  = $ECCC_varset"
     echo ":: varname = $varname"
     echo ":: level = $level"
+ 
+    echo ":: cntr_ECCC_varset  = $cntr_ECCC_varset"
+    echo ":: cntr_varname = $cntr_varname"
+    echo ":: cntr_level = $cntr_level"
     
     region_name="${region_params[$(( j * $region_nparams + 0 ))]}"
     region_projection="${region_params[$(( j * $region_nparams + 1 ))]}"
@@ -78,49 +58,54 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     echo ":: region_lon_min = $region_lon_min"
     echo ":: region_lon_max = $region_lon_max"
 
-
     if [ "$level" = "0" ] ; then
         level_str=""
     else
         level_str="-${level}"
     fi 
 
-    output_dir=$fig_dir/fig_worldmap_prediction_error_diff_Emean_global_window-$days_per_window-multimonths/group-${GEPS6_group}/$region_name-${region_projection}
-    output_error_dir=$fig_dir/fig_worldmap_prediction_error_diff_Eabsmean_global_window-$days_per_window-multimonths/group-${GEPS6_group}/$region_name-${region_projection}
+    if [ "$cntr_level" = "0" ] ; then
+        cntr_level_str=""
+    else
+        cntr_level_str="-${cntr_level}"
+    fi 
+
+
+    output_dir=$fig_dir/fig_error_diff_Emean_by_CAT2-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
+    output_error_dir=$fig_dir/fig_error_diff_Eabsmean_by_CAT2-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
 
     mkdir -p $output_dir
     mkdir -p $output_error_dir
 
+    input_dir=$data_dir/analysis/output_analysis_map_by_CAT2_window-${days_per_window}-leadwindow-${lead_windows}
 
-    input_dir=$data_dir/analysis/output_analysis_map_window-${days_per_window}-leadwindow-${lead_windows}
-
-    for months in "12 1 2"; do
+    for categories in "MJO" "nonMJO" ; do
         
-        #for lead_window in $( seq 0 $(( $lead_windows - 1 )) )  ; do
         for lead_window in $( seq 0 2 ) ; do
            
-            m_str=$( echo "$months" | sed -r "s/ /,/g" ) 
-            output=$output_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
-            output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
-
-            
+            category_str=$( echo "$categories" | sed -r "s/ /,/g" ) 
+            output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
+            output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
 
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
             else
-                python3 src/plot_map_prediction_error_diff_group.py \
+                python3 src/plot_map_prediction_error_diff_group_by_category.py \
                     --input-dir $input_dir \
                     --map-projection-name $region_projection \
                     --model-versions GEPS5 $GEPS6_group \
-                    --year-rng $year_beg $year_end \
-                    --months $months \
+                    --category $categories \
                     --lead-window $lead_window \
                     --varset $ECCC_varset \
                     --varname $varname \
                     --level $level \
+                    --cntr-varset  $cntr_ECCC_varset \
+                    --cntr-varname $cntr_varname \
+                    --cntr-level   $cntr_level \
                     --no-display \
                     --output $output \
                     --output-error $output_error \
+                    --pval-threshold 0.1 \
                     --plot-lat-rng $region_lat_min $region_lat_max \
                     --plot-lon-rng $region_lon_min $region_lon_max & 
 

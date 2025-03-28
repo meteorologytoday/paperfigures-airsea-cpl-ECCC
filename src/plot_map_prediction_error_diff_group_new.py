@@ -70,7 +70,6 @@ for model_version in args.model_versions:
     filenames = []
 
     for year in selected_years:
-
         for month in selected_months:
             filenames.append(
                 os.path.join(args.input_dir, model_version, "ECCC-S2S_{model_version:s}_{varset:s}::{varname:s}_{yyyymm:s}.nc".format(
@@ -145,20 +144,14 @@ for model_version in args.model_versions:
 
     print("Negative total_Evar after fixed: ", _total_Eabsvar[_total_Eabsvar < 0])
  
-
-
-    
     total_cnt = ds["total_cnt"].sum(dim="start_ym").rename("total_cnt")
     total_ddof = ds["ddof"].sum(dim="start_ym").rename("total_ddof")
 
     print("TOTALDDOF: ", total_ddof.to_numpy())
 
 
-    total_Estd = np.sqrt(total_Evar)
-    total_Estderr = total_Estd / total_ddof**0.5
-
-    total_Estd = total_Estd.rename("total_Estd")
-    total_Estderr = total_Estderr.rename("total_Estderr")
+    total_Estd = np.sqrt(total_Evar).rename("total_Estd")
+    total_Estderr = (total_Estd / total_ddof**0.5).rename("total_Estderr")
     
     total_Eabsstd = np.sqrt(total_Eabsvar).rename("total_Eabsstd")
 
@@ -242,15 +235,6 @@ for j in range(ds_ref.dims["latitude"]):
 
 
 plot_infos = dict(
-
-     ci = dict(
-        shading_levels = np.linspace(-1, 1, 21) * 10,
-        contour_levels = np.linspace(0, 1, 11) * 10,
-        factor = 1e-2,
-        label = "SIC",
-        unit  = "$\\%$",
-    ),
-
 
     IWV = dict(
         shading_levels = np.linspace(-1, 1, 21) * 2,

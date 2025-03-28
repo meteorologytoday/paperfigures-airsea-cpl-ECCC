@@ -17,51 +17,138 @@ mkdir -p $finalfig_svg_dir
 
 echo "Making final figures... "
 
-echo "Figure 1: Estd error"
-svg_stack.py                                \
-    --direction=h                           \
-    $fig_dir/fig_worldmap_prediction_error_diff_Estd_global_pentad-5-multimonths/group-GEPS6sub1/NPAC/surf_inst-msl_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg                       \
-    $fig_dir/fig_worldmap_prediction_error_diff_Estd_global_pentad-5-multimonths/group-GEPS6sub1/NATL/surf_inst-msl_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg                       \
-    > $fig_dir/merged-Estd-msl.svg
+window_size=5
 
-svg_stack.py                                \
-    --direction=h                           \
-    $fig_dir/fig_worldmap_prediction_error_diff_Estd_global_pentad-5-multimonths/group-GEPS6sub1/NPAC/UVTZ-gh-850_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg \
-    $fig_dir/fig_worldmap_prediction_error_diff_Estd_global_pentad-5-multimonths/group-GEPS6sub1/NATL/UVTZ-gh-850_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg \
-    > $fig_dir/merged-Estd-850.svg
-
-svg_stack.py \
-    --direction=v \
-    $fig_dir/merged-Estd-msl.svg \
-    $fig_dir/merged-Estd-850.svg \
-    > $fig_dir/merged-Estd-msl850.svg
+GEPS6_group=sub1
 
 
-echo "Figure 2: Cpl effect"
-svg_stack.py                                \
-    --direction=h                           \
-    $fig_dir/fig_worldmap_prediction_error_diff_global_pentad-5-multimonths/group-GEPS6sub1/NPAC/surf_inst-msl_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg                       \
-    $fig_dir/fig_worldmap_prediction_error_diff_global_pentad-5-multimonths/group-GEPS6sub1/NATL/surf_inst-msl_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg                       \
-    > $fig_dir/merged-Emean-msl.svg
+echo "Figure 1 and 2: Estd and Emean error"
 
-svg_stack.py                                \
-    --direction=h                           \
-    $fig_dir/fig_worldmap_prediction_error_diff_global_pentad-5-multimonths/group-GEPS6sub1/NPAC/UVTZ-gh-850_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg \
-    $fig_dir/fig_worldmap_prediction_error_diff_global_pentad-5-multimonths/group-GEPS6sub1/NATL/UVTZ-gh-850_1998-2017_10,11,12,1,2,3_lead-pentad-1.svg \
-    > $fig_dir/merged-Emean-850.svg
+for varname in "surf_inst-msl" "UVTZ-gh-850" "UVTZ-gh-500" ; do
+for region in NPACATL ; do
+for stat in Emean Eabsmean ; do
+for month_str in "12,1,2" ; do
 
-svg_stack.py \
-    --direction=v \
-    $fig_dir/merged-Emean-msl.svg \
-    $fig_dir/merged-Emean-850.svg \
-    > $fig_dir/merged-Emean-msl850.svg
+    region_proj=${region}-Orthographic
+   
+
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-0.svg                       \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-1.svg                       \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-2.svg                       \
+        > $fig_dir/merged-${varname}-${region}-${stat}-${month_str}.svg
+
+done
+done
+done
+done
+
+svg_stack.py --direction=h \
+    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,1,2.svg \
+    $fig_dir/merged-UVTZ-gh-850-NPACATL-Emean-12,1,2.svg \
+    > $fig_dir/merged-fig1.svg
+
+
+for varname in "AR-IVT" ; do
+for region in NPACATL ; do
+for stat in Emean Eabsmean ; do
+for month_str in "12,1,2" ; do
+
+    region_proj=${region}-PlateCarree
+   
+
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-0.svg                       \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-1.svg                       \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-2.svg                       \
+        > $fig_dir/merged-${varname}-${region}-${stat}-${month_str}.svg
+
+done
+done
+done
+done
+
+
+echo "Making overlaping figures..."
+for region in NPACATL ; do
+for category in nonMJO MJO; do
+    region_proj=${region}-PlateCarree
+   
+
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-0.svg \
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-1.svg \
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-2.svg \
+        > $fig_dir/merged-overlaping-lhf_msl-${region}-Emean-${category}.svg
+done
+done
+
+
+echo "Making Figure 3 stuff..."
+for region in NPACATL ; do
+for stat in Emean ; do
+for month_str in "12,1,2" ; do
+
+    region_proj=${region}-PlateCarree
+   
+
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-0.svg                       \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-1.svg                       \
+        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-2.svg                       \
+        > $fig_dir/merged-${varname}-${region}-${stat}-${month_str}.svg
+
+done
+done
+done
+
+
+echo "Making Figure of MJO ..."
+for varname in "surf_inst-msl" ; do
+for region in NPACATL ; do
+for stat in Emean ; do
+for category in MJO nonMJO ; do
+
+    region_proj=${region}-Orthographic
+   
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_error_diff_${stat}_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_${category}_lead-window-0.svg                       \
+        $fig_dir/fig_error_diff_${stat}_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_${category}_lead-window-1.svg                       \
+        $fig_dir/fig_error_diff_${stat}_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_${category}_lead-window-2.svg                       \
+        > $fig_dir/merged-${category}-${varname}-${region}-${stat}.svg
+
+done
+done
+done
+done
+
+svg_stack.py --direction=h \
+    $fig_dir/merged-MJO-surf_inst-msl-NPACATL-Emean.svg \
+    $fig_dir/merged-nonMJO-surf_inst-msl-NPACATL-Emean.svg \
+    > $fig_dir/merged-MJOfig-Emean.svg
+
+
+svg_stack.py --direction=h \
+    $fig_dir/fig_error_diff_Eabsmean_by_CAT2-5/group-GEPS6sub1/NPACATL-Orthographic/surf_inst-msl_MJO_lead-window-2.svg  \
+    $fig_dir/fig_error_diff_Eabsmean_by_CAT2-5/group-GEPS6sub1/NPACATL-Orthographic/surf_inst-msl_nonMJO_lead-window-2.svg  \
+    > $fig_dir/merged-MJOfig-Eabsmean.svg
 
 
 
 
 name_pairs=(
-    merged-Estd-msl850.svg      fig01
-    merged-Emean-msl850.svg     fig02
+    merged-surf_inst-msl-NPACATL-Eabsmean-12,1,2.svg   fig01
+    merged-fig1.svg                                    fig02
+    merged-AR-IVT-NPACATL-Emean-12,1,2.svg             fig03
+    merged-MJOfig-Emean.svg                            fig04
+    merged-MJOfig-Eabsmean.svg                         fig05
+    merged-overlaping-lhf_msl-NPACATL-Emean-nonMJO.svg fig06
+    merged-UVTZ-gh-500-NPACATL-Emean-12,1,2.svg        figS01
 )
 
 N=$(( ${#name_pairs[@]} / 2 ))

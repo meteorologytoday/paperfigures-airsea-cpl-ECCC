@@ -8,31 +8,95 @@ import scipy
 import scipy.stats
 import cmocean
 
+def loadVariable(
+    model_version,
+    varset,
+    varname,
+    selected_categories, 
+    lead_window,
+    level,
+):
 
-def expand_axis(arr, axis=0):
+    filenames = []
+    for category in selected_categories:
+        filenames.append(
+            os.path.join(args.input_dir, model_version, "ECCC-S2S_{model_version:s}_{varset:s}::{varname:s}_category-{category:s}.nc".format(
+                model_version = model_version,
+                varset  = varset,
+                varname = varname,
+                category = category,
+            ))
+        )
+
+    print("Reading to load the following files:")
+    print(filenames)
+    ds = xr.open_mfdataset(filenames, concat_dim="category", combine="nested", engine="netcdf4")
+    print(ds)
+    ds = ds.sel(lead_window=lead_window)
+
+    ds_varnames = dict(
+        Emean    = "%s_Emean" % varname,
+        E2mean   = "%s_E2mean" % varname,
+        Eabsmean    = "%s_Eabsmean" % varname,
+        Eabs2mean   = "%s_Eabs2mean" % varname,
+    )
     
-    _arr = np.array(arr)
-    
-    shape = np.array(arr.shape, dtype=int)
-    shape[axis] += 1
-    
-    _arr = np.array(shape, dtype=arr.dtype)
-    
-    selector1 = [ slice(None, None) for _ in len(shape) ]
-    selector2 = [ slice(None, None) for _ in len(shape) ]
 
-    selector1[axis] = slice(0, -1)
+    if "level" in ds[ds_varnames["Emean"]].dims:
 
-    _arr[selector1] = arr
-    
-    selector1[axis] = -1
-    selector2[axis] =  0
-    _arr[selector1] = _arr[selector2]
+        print("This is 3D variable!!!!")
+        var3D = True
+        if level is None:
+            
+            raise Exception("Data is 3D but `--level` is not given.")
 
-    return arr
+        print("Selecting level = %d" % (level,))
+        ds = ds.sel(level=level)
 
 
+    total_Emean  = ds[ds_varnames["Emean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_Emean")
+    total_E2mean = ds[ds_varnames["E2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_E2mean")
+    total_Evar = total_E2mean - total_Emean ** 2
+    _total_Evar = total_Evar.to_numpy()
+    print("Negative total_Evar (possibly due to precision error): ", _total_Evar[_total_Evar < 0])
 
+    print("Fix the small negative ones...")
+    _total_Evar[(np.abs(_total_Evar) < 1e-5) & (_total_Evar < 0)] = 0
+
+    print("Number of negative total_Evar after fixed: ", np.sum(_total_Evar < 0))
+
+    # Eabs
+    total_Eabsmean  = ds[ds_varnames["Eabsmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_Eabsmean")
+    total_Eabs2mean = ds[ds_varnames["Eabs2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_Eabs2mean")
+    total_Eabsvar = total_Eabs2mean - total_Eabsmean ** 2
+    _total_Eabsvar = total_Eabsvar.to_numpy()
+    print("Negative total_Eabsvar (possibly due to precision error): ", _total_Eabsvar[_total_Eabsvar < 0])
+
+    print("Fix the small negative ones...")
+    _total_Eabsvar[(np.abs(_total_Eabsvar) < 1e-5) & (_total_Eabsvar < 0)] = 0
+
+    print("Negative total_Evar after fixed: ", _total_Eabsvar[_total_Eabsvar < 0])
+ 
+    total_cnt = ds["total_cnt"].sum(dim="category").rename("total_cnt")
+    total_ddof = ds["ddof"].sum(dim="category").rename("total_ddof")
+
+    total_Estd = np.sqrt(total_Evar).rename("total_Estd")
+    total_Estderr = (total_Estd / total_ddof**0.5).rename("total_Estderr")
+
+    total_Eabsstd = np.sqrt(total_Eabsvar).rename("total_Eabsstd")
+
+
+    new_ds = xr.merge([total_Emean, total_Estd, total_Estderr, total_Eabsmean, total_Eabs2mean, total_Eabsstd])
+    new_ds = xr.concat([new_ds, new_ds.isel(longitude=slice(0, 1))], dim="longitude")
+    new_longitude = new_ds.coords["longitude"].to_numpy()
+    new_longitude[-1] = new_longitude[-2] + (new_longitude[1] - new_longitude[0])
+    new_ds = new_ds.assign_coords(longitude=new_longitude)
+
+    # total_cnt has to be done sepearately. Otherwise the isel longitude will append another dimension
+    new_ds = xr.merge([new_ds, total_cnt, total_ddof])
+
+
+    return new_ds
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--input-dir', type=str, help='Input directory.', required=True)
@@ -40,8 +104,13 @@ parser.add_argument('--map-projection-name', type=str, help='Map projection', re
 parser.add_argument('--model-versions', type=str, nargs=2, help='Input directory.', required=True)
 parser.add_argument('--varset',  type=str, help='Input directory.', default="surf_inst")
 parser.add_argument('--varname', type=str, help='Input directory.', default="mean_sea_level_pressure")
-parser.add_argument('--year-rng', type=int, nargs=2, help='Range of years', required=True)
-parser.add_argument('--months', type=int, nargs="+", help='Month to be processed.', required=True)
+
+parser.add_argument('--cntr-varset',  type=str, help='Input directory.', default=None)
+parser.add_argument('--cntr-varname', type=str, help='Input directory.', default=None)
+parser.add_argument('--cntr-level', type=int, help='Selected level if data is 3D.', default=None)
+
+parser.add_argument('--extra-title', type=str, help='Input directory.', default="")
+parser.add_argument('--category', type=str, nargs="+", help='categories needs to be count', required=True)
 parser.add_argument('--level', type=int, help='Selected level if data is 3D.', default=None)
 parser.add_argument('--pval-threshold', type=float, help='Month to be processed.', default=0.1)
 parser.add_argument('--lead-window', type=int, help='Pentad to be processed.', required=True)
@@ -56,128 +125,46 @@ args = parser.parse_args()
 
 print(args)
 
-data = []
+has_cntr = (args.cntr_varset is not None) and (args.cntr_varname is not None)
 
+
+data = []
+cntr_data = []
 var3D = False
 
-selected_years = list(range(args.year_rng[0], args.year_rng[1]+1))
-selected_months = args.months
+selected_categories = args.category
+
 
 for model_version in args.model_versions:
-    
     print("# model_version : ", model_version)
+    ds = loadVariable(
+        model_version,
+        args.varset,
+        args.varname,
+        selected_categories, 
+        args.lead_window,
+        args.level,
+    )   
+    data.append(ds)
 
-    filenames = []
-
-    for year in selected_years:
-
-        for month in selected_months:
-            filenames.append(
-                os.path.join(args.input_dir, model_version, "ECCC-S2S_{model_version:s}_{varset:s}::{varname:s}_{yyyymm:s}.nc".format(
-                    model_version = model_version,
-                    varset  = args.varset,
-                    varname = args.varname,
-                    yyyymm = pd.Timestamp(year=year, month=month, day=1).strftime("%Y-%m"),
-                ))
-            )
-
-    print("Reading to load the following files:")
-    print(filenames)
-    ds = xr.open_mfdataset(filenames, concat_dim="start_ym", combine="nested", engine="netcdf4")
-    ds = ds.sel(lead_window=args.lead_window)
-
-    """
-    merge_ds = []
-    for filename in filenames:
-        _ds = xr.open_dataset(filename, engine="netcdf4")
-        _ds = _ds.sel(lead_window=args.lead_window)
-        merge_ds.append(_ds)
-
-    ds = xr.merge(merge_ds)
-    """
-    print(ds)
-
-
-    ds_varnames = dict(
-        Emean    = "%s_Emean" % args.varname,
-        E2mean   = "%s_E2mean" % args.varname,
-        Eabsmean    = "%s_Eabsmean" % args.varname,
-        Eabs2mean   = "%s_Eabs2mean" % args.varname,
-
-    )
-    
-    print(ds[ds_varnames["Emean"]].dims)
-
-    if "level" in ds[ds_varnames["Emean"]].dims:
-
-        print("This is 3D variable!!!!")
-        var3D = True
-        if args.level is None:
-            
-            raise Exception("Data is 3D but `--level` is not given.")
-
-        print("Selecting level = %d" % (args.level,))
-        ds = ds.sel(level=args.level)
-
-
-    # Emean
-    total_Emean  = ds[ds_varnames["Emean"]].weighted(ds["total_cnt"]).mean(dim="start_ym").rename("total_Emean")
-    total_E2mean = ds[ds_varnames["E2mean"]].weighted(ds["total_cnt"]).mean(dim="start_ym").rename("total_E2mean")
-    total_Evar = total_E2mean - total_Emean ** 2
-    _total_Evar = total_Evar.to_numpy()
-    print("Negative total_Evar (possibly due to precision error): ", _total_Evar[_total_Evar < 0])
-
-    print("Fix the small negative ones...")
-    _total_Evar[(np.abs(_total_Evar) < 1e-5) & (_total_Evar < 0)] = 0
-
-    print("Negative total_Evar after fixed: ", _total_Evar[_total_Evar < 0])
-
-
-    # Eabs
-    total_Eabsmean  = ds[ds_varnames["Eabsmean"]].weighted(ds["total_cnt"]).mean(dim="start_ym").rename("total_Eabsmean")
-    total_Eabs2mean = ds[ds_varnames["Eabs2mean"]].weighted(ds["total_cnt"]).mean(dim="start_ym").rename("total_Eabs2mean")
-    total_Eabsvar = total_Eabs2mean - total_Eabsmean ** 2
-    _total_Eabsvar = total_Eabsvar.to_numpy()
-    print("Negative total_Eabsvar (possibly due to precision error): ", _total_Eabsvar[_total_Eabsvar < 0])
-
-    print("Fix the small negative ones...")
-    _total_Eabsvar[(np.abs(_total_Eabsvar) < 1e-5) & (_total_Eabsvar < 0)] = 0
-
-    print("Negative total_Evar after fixed: ", _total_Eabsvar[_total_Eabsvar < 0])
- 
-
-
-    
-    total_cnt = ds["total_cnt"].sum(dim="start_ym").rename("total_cnt")
-    total_ddof = ds["ddof"].sum(dim="start_ym").rename("total_ddof")
-
-    print("TOTALDDOF: ", total_ddof.to_numpy())
-
-
-    total_Estd = np.sqrt(total_Evar)
-    total_Estderr = total_Estd / total_ddof**0.5
-
-    total_Estd = total_Estd.rename("total_Estd")
-    total_Estderr = total_Estderr.rename("total_Estderr")
-    
-    total_Eabsstd = np.sqrt(total_Eabsvar).rename("total_Eabsstd")
-
-
-
-    new_ds = xr.merge([total_Emean, total_Estd, total_Estderr, total_Eabsmean, total_Eabs2mean, total_Eabsstd])
-    new_ds = xr.concat([new_ds, new_ds.isel(longitude=slice(0, 1))], dim="longitude")
-    new_longitude = new_ds.coords["longitude"].to_numpy()
-    new_longitude[-1] = new_longitude[-2] + (new_longitude[1] - new_longitude[0])
-    new_ds = new_ds.assign_coords(longitude=new_longitude)
-
-    # total_cnt has to be done sepearately. Otherwise the isel longitude will append another dimension
-    new_ds = xr.merge([new_ds, total_cnt, total_ddof])
-
-    data.append(new_ds)
+    if has_cntr:
+        cntr_data.append(
+            loadVariable(
+                model_version,
+                args.cntr_varset,
+                args.cntr_varname,
+                selected_categories, 
+                args.lead_window,
+                args.cntr_level,
+            ),
+        )
 
 # Do student T-test
 diff_ds = data[1] - data[0]
 ds_ref = data[0]
+
+if has_cntr:
+    diff_ds_cntr = cntr_data[1] - cntr_data[0]
 
 pval = np.zeros_like(diff_ds["total_Estd"])
 pval_Eabs = np.zeros_like(diff_ds["total_Eabsstd"])
@@ -365,9 +352,15 @@ from matplotlib.patches import Rectangle
 import matplotlib.transforms as transforms
 from matplotlib.dates import DateFormatter
 import matplotlib.ticker as mticker
+from matplotlib import rcParams
+
+
+
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.crs as ccrs
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+
+rcParams['contour.negative_linestyle'] = 'dashed'
 
 print("done")
 
@@ -447,12 +440,10 @@ _ax = ax[0, 0]
 
 plot_info = plot_infos[args.varname]
 
-fig.suptitle("[%s minus %s] %04d-%04d month=%s, lead_window=%d.\np value = %.2f" % (
+fig.suptitle("[%s minus %s] category=%s, lead_window=%d.\np value = %.2f" % (
     args.model_versions[1],
     args.model_versions[0],
-    args.year_rng[0],
-    args.year_rng[1],
-    ", ".join([ "%02d" % m for m in args.months]),
+    ", ".join(args.category),
     args.lead_window,
     args.pval_threshold,
 ), size=18)
@@ -471,13 +462,13 @@ mappable = _ax.contourf(
     transform=map_transform,
 )
 
-"""
-# Plot the standard deviation
-_contour = ((data[0]["total_Estderr"]**2 + data[1]["total_Estderr"]**2)/2)**0.5 / plot_info["factor"]
-#_contour = (data[0]["total_Estd"] + data[1]["total_Estd"]) / 2 / plot_info["factor"]
-cs = _ax.contour(coords["longitude"], coords["latitude"], _contour, levels=plot_info["contour_levels"], colors="k", linestyles='-',linewidths=1, transform=proj, alpha=0.8, zorder=10)
-_ax.clabel(cs, fmt="%.1f")
-"""
+
+if has_cntr:
+
+    cntr_plot_info = plot_infos[args.cntr_varname]
+    _cntr = diff_ds_cntr["total_Emean"].to_numpy() / cntr_plot_info["factor"]
+    cs = _ax.contour(coords["longitude"], coords["latitude"], _cntr, levels=cntr_plot_info["contour_levels"], colors="k",linewidths=1, transform=map_transform, alpha=0.8, zorder=10)
+    _ax.clabel(cs, fmt="%.1f")
 
 #_contour = pval
 #cs = _ax.contour(coords["longitude"], coords["latitude"], _contour, levels=[0.1,], colors="k", linestyles='-',linewidths=1, transform=proj, alpha=0.8, zorder=10)
@@ -586,14 +577,11 @@ if args.output_error != "":
 
     plot_info = plot_infos[args.varname]
 
-    fig.suptitle("[%s minus %s] abs %04d-%04d month=%s, lead_window=%d" % (
+    fig.suptitle("[%s minus %s] abs category=%s" % (
         args.model_versions[1],
         args.model_versions[0],
-        args.year_rng[0],
-        args.year_rng[1],
-        ", ".join([ "%02d" % m for m in args.months]),
-        args.lead_window,
-    ), size=20)
+        ",".join(args.category),
+    ), size=18)
 
     coords = diff_ds.coords
 
@@ -666,7 +654,6 @@ if args.output_error != "":
         fig.savefig(args.output_error, dpi=200)
 
     print("Finished.")
-
 
 
 
