@@ -49,12 +49,15 @@ parser.add_argument('--output', type=str, help='Output directory.', default="")
 parser.add_argument('--output-error', type=str, help='Output directory.', default="")
 parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of latitude', default=[-90, 90])
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
+parser.add_argument('--paper', type=int, default=0)
 
 
 parser.add_argument('--no-display', action="store_true")
 args = parser.parse_args()
 
 print(args)
+
+args.paper = args.paper == 1
 
 data = []
 
@@ -311,7 +314,7 @@ plot_infos = dict(
         shading_levels = np.linspace(-1, 1, 21) * 2,
         contour_levels = np.linspace(0, 1, 11) * 5,
         factor = 1e2,
-        label = "$ P_\\mathrm{sfc} $",
+        label = "$ P_\\mathrm{MSL} $",
         unit  = "hPa",
     ),
 
@@ -329,6 +332,14 @@ plot_infos = dict(
         factor = 1,
         label = "$ H_\\mathrm{sen} $",
         unit  = "$ \\mathrm{W} \\, / \\, \\mathrm{m}^2 $",
+    ),
+
+    mtp = dict(
+        shading_levels = np.linspace(-1, 1, 21) * 1,
+        contour_levels = np.linspace(0, 1, 5) * 2,
+        factor = 1,
+        label = "$P_{\\mathrm{rain}}$",
+        unit  = "$ \\mathrm{mm} / \\mathrm{day} $",
     ),
 
 
@@ -369,10 +380,13 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.crs as ccrs
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
+from matplotlib import rcParams
+
 print("done")
 
 from scipy.stats import ttest_ind_from_stats
 
+rcParams['axes.titlepad'] = 10
 
 projection_name = args.map_projection_name
 
@@ -447,15 +461,34 @@ _ax = ax[0, 0]
 
 plot_info = plot_infos[args.varname]
 
-fig.suptitle("[%s minus %s] %04d-%04d month=%s, lead_window=%d.\np value = %.2f" % (
-    args.model_versions[1],
-    args.model_versions[0],
-    args.year_rng[0],
-    args.year_rng[1],
-    ", ".join([ "%02d" % m for m in args.months]),
-    args.lead_window,
-    args.pval_threshold,
-), size=18)
+if args.paper:
+
+    label = plot_info["label"]
+    if var3D:
+        label = label % (args.level,)
+
+    if np.all(np.array(args.months) == np.array([12, 1, 2])):
+        start_time_label = "\\phi_{\\mathrm{DJF}}" 
+    else:
+        start_time_label = "\\phi"
+
+    _ax.set_title("$\\Delta B ($%s$; %s, p = %d)$" % (
+        label,
+        start_time_label,
+        args.lead_window+1,
+    ), size=18)
+
+else:
+
+    _ax.set_title("[%s minus %s] %04d-%04d month=%s, lead_window=%d.\np value = %.2f" % (
+        args.model_versions[1],
+        args.model_versions[0],
+        args.year_rng[0],
+        args.year_rng[1],
+        ", ".join([ "%02d" % m for m in args.months]),
+        args.lead_window,
+        args.pval_threshold,
+    ), size=18)
 
 
 
@@ -523,18 +556,25 @@ for __ax in [_ax, ]:
     if projection_name == "PlateCarree":
         __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
 
+spacing = 0.3
 
-
-cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.03, spacing=0.05)
+cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
 cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 
 unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
 
-label = plot_info["label"]
-if var3D:
-    label = label % (args.level,)
+if args.paper:
+    label = unit_str
 
-cb.ax.set_ylabel("%s\n%s" % (label, unit_str), size=25)
+else:
+
+    label = plot_info["label"]
+    if var3D:
+        label = label % (args.level,)
+    
+    label = "%s\n%s" % (label, unit_str)
+
+cb.ax.set_ylabel(label, size=25)
 
 
 if not args.no_display:
@@ -585,15 +625,35 @@ if args.output_error != "":
     _ax = ax[0, 0]
 
     plot_info = plot_infos[args.varname]
+    
+    if args.paper:
 
-    fig.suptitle("[%s minus %s] abs %04d-%04d month=%s, lead_window=%d" % (
-        args.model_versions[1],
-        args.model_versions[0],
-        args.year_rng[0],
-        args.year_rng[1],
-        ", ".join([ "%02d" % m for m in args.months]),
-        args.lead_window,
-    ), size=20)
+        label = plot_info["label"]
+        if var3D:
+            label = label % (args.level,)
+
+        if np.all(np.array(args.months) == np.array([12, 1, 2])):
+            start_time_label = "\\phi_{\\mathrm{DJF}}" 
+        else:
+            start_time_label = "\\phi"
+
+        _ax.set_title("$\\Delta A ($%s$; %s, p = %d)$" % (
+            label,
+            start_time_label,
+            args.lead_window+1,
+        ), size=18)
+
+
+    else:
+
+        _ax.set_title("[%s minus %s] abs %04d-%04d month=%s, lead_window=%d" % (
+            args.model_versions[1],
+            args.model_versions[0],
+            args.year_rng[0],
+            args.year_rng[1],
+            ", ".join([ "%02d" % m for m in args.months]),
+            args.lead_window,
+        ), size=18)
 
     coords = diff_ds.coords
 
@@ -651,6 +711,17 @@ if args.output_error != "":
     cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 
     unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
+    if args.paper:
+        label = unit_str
+    else:
+        label = plot_info["label"]
+        if var3D:
+            label = label % (args.level,)
+        
+        label = "%s\n%s" % (label, unit_str)
+
+    cb.ax.set_ylabel(label, size=25)
+
 
 
     label = plot_info["label"]

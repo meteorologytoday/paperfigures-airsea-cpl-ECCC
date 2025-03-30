@@ -4,7 +4,7 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=10
+batch_cnt_limit=40
 
 
 year_beg=1998
@@ -17,9 +17,11 @@ lead_windows=6
 
 
 params=(
+    precip mtp 0
+    UVTZ gh           850
     surf_avg ci 0
     surf_inst msl     0
-    UVTZ gh           850
+
     UVTZ gh           500
     AR IVT            0
     surf_avg sst     0
@@ -109,6 +111,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                 echo "Output file $output and $output_error exist. Skip."
             else
                 python3 src/plot_map_prediction_error_diff_group.py \
+                    --paper $paper \
                     --input-dir $input_dir \
                     --map-projection-name $region_projection \
                     --model-versions GEPS5 $GEPS6_group \

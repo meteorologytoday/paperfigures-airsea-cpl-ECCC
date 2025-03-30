@@ -85,6 +85,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                 echo "Output file $output and $output_error exist. Skip."
             else
                 python3 src/plot_map_prediction_error_diff_group_by_category.py \
+                    --paper $paper \
                     --input-dir $input_dir \
                     --map-projection-name $region_projection \
                     --model-versions GEPS5 $GEPS6_group \

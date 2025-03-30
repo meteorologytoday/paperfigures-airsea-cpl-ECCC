@@ -118,7 +118,7 @@ parser.add_argument('--output', type=str, help='Output directory.', default="")
 parser.add_argument('--output-error', type=str, help='Output directory.', default="")
 parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of latitude', default=[-90, 90])
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
-
+parser.add_argument('--paper', type=int, default=0)
 
 parser.add_argument('--no-display', action="store_true")
 args = parser.parse_args()
@@ -126,6 +126,8 @@ args = parser.parse_args()
 print(args)
 
 has_cntr = (args.cntr_varset is not None) and (args.cntr_varname is not None)
+
+args.paper = args.paper == 1
 
 
 data = []
@@ -230,6 +232,15 @@ for j in range(ds_ref.dims["latitude"]):
 
 plot_infos = dict(
 
+     mtp = dict(
+        shading_levels = np.linspace(-1, 1, 21) * 10,
+        contour_levels = np.linspace(0, 1, 11) * 10,
+        factor = 1e-2,
+        label = "SIC",
+        unit  = "$\\%$",
+    ),
+
+
      ci = dict(
         shading_levels = np.linspace(-1, 1, 21) * 10,
         contour_levels = np.linspace(0, 1, 11) * 10,
@@ -298,7 +309,7 @@ plot_infos = dict(
         shading_levels = np.linspace(-1, 1, 21) * 2,
         contour_levels = np.linspace(0, 1, 11) * 5,
         factor = 1e2,
-        label = "$ P_\\mathrm{sfc} $",
+        label = "$ P_\\mathrm{MSL} $",
         unit  = "hPa",
     ),
 
@@ -440,13 +451,35 @@ _ax = ax[0, 0]
 
 plot_info = plot_infos[args.varname]
 
-fig.suptitle("[%s minus %s] category=%s, lead_window=%d.\np value = %.2f" % (
-    args.model_versions[1],
-    args.model_versions[0],
-    ", ".join(args.category),
-    args.lead_window,
-    args.pval_threshold,
-), size=18)
+if args.paper:
+
+    label = plot_info["label"]
+    if var3D:
+        label = label % (args.level,)
+
+    if args.category[0] == "MJO":
+        start_time_label = "\\phi_{\\mathrm{MJO}}" 
+    elif args.category[0] == "nonMJO":
+        start_time_label = "\\phi_{\\mathrm{xMJO}}" 
+    else:
+        start_time_label = "\\phi"
+
+    _ax.set_title("$\\Delta B ($%s$; %s, p = %d)$" % (
+        label,
+        start_time_label,
+        args.lead_window+1,
+    ), size=18)
+
+
+else:
+
+    _ax.set_title("[%s minus %s] category=%s, lead_window=%d.\np value = %.2f" % (
+        args.model_versions[1],
+        args.model_versions[0],
+        ", ".join(args.category),
+        args.lead_window,
+        args.pval_threshold,
+    ), size=18)
 
 
 
@@ -521,11 +554,16 @@ cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 
 unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
 
-label = plot_info["label"]
-if var3D:
-    label = label % (args.level,)
+if args.paper:
+    label = unit_str
+else:
+    label = plot_info["label"]
+    if var3D:
+        label = label % (args.level,)
+    
+    label = "%s\n%s" % (label, unit_str)
 
-cb.ax.set_ylabel("%s\n%s" % (label, unit_str), size=25)
+cb.ax.set_ylabel(label, size=25)
 
 
 if not args.no_display:
@@ -576,12 +614,33 @@ if args.output_error != "":
     _ax = ax[0, 0]
 
     plot_info = plot_infos[args.varname]
+    if args.paper:
 
-    fig.suptitle("[%s minus %s] abs category=%s" % (
-        args.model_versions[1],
-        args.model_versions[0],
-        ",".join(args.category),
-    ), size=18)
+        label = plot_info["label"]
+        if var3D:
+            label = label % (args.level,)
+
+        if args.category[0] == "MJO":
+            start_time_label = "\\phi_{\\mathrm{MJO}}" 
+        elif args.category[0] == "nonMJO":
+            start_time_label = "\\phi_{\\mathrm{xMJO}}" 
+        else:
+            start_time_label = "\\phi"
+
+        _ax.set_title("$\\Delta A ($%s$; %s, p = %d)$" % (
+            label,
+            start_time_label,
+            args.lead_window+1,
+        ), size=18)
+
+
+    else:
+
+        _ax.set_title("[%s minus %s] abs category=%s" % (
+            args.model_versions[1],
+            args.model_versions[0],
+            ",".join(args.category),
+        ), size=18)
 
     coords = diff_ds.coords
 
@@ -635,17 +694,21 @@ if args.output_error != "":
 
 
 
-    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.03, spacing=0.05)
+    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.1, spacing=0.1, flag_ratio_thickness=False, flag_ratio_spacing=False)
     cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 
     unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
 
+    if args.paper:
+        label = unit_str
+    else:
+        label = plot_info["label"]
+        if var3D:
+            label = label % (args.level,)
+        
+        label = "%s\n%s" % (label, unit_str)
 
-    label = plot_info["label"]
-    if var3D:
-        label = label % (args.level,)
-
-    cb.ax.set_ylabel("%s\n%s" % (label, unit_str), size=25)
+    cb.ax.set_ylabel(label, size=25)
 
 
     if args.output_error != "":

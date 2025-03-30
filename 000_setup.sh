@@ -17,4 +17,4 @@ mkdir -p $gendata_dir
 days_per_window=7
 lead_windows=4
 
-
+paper=1
