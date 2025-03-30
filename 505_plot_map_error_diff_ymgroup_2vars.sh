@@ -4,7 +4,7 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=10
+batch_cnt_limit=1
 
 
 days_per_window=5
@@ -12,7 +12,6 @@ lead_windows=6
 
 params=(
     AR IVT 0 precip mtp 0
-#    surf_hf_avg mslhf 0  surf_inst msl 0
 )
 
 region_params=(
@@ -72,21 +71,36 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     fi 
 
 
-    output_dir=$fig_dir/fig_error_diff_Emean_by_CAT2-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
-    output_error_dir=$fig_dir/fig_error_diff_Eabsmean_by_CAT2-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
+    output_dir=$fig_dir/fig_error_diff_Emean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
+    output_error_dir=$fig_dir/fig_error_diff_Eabsmean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
 
     mkdir -p $output_dir
     mkdir -p $output_error_dir
 
-    input_dir=$data_dir/analysis/output_analysis_map_by_CAT2_window-${days_per_window}-leadwindow-${lead_windows}
+    input_dir=$data_dir/analysis/output_analysis_map_by_ym_window-${days_per_window}-leadwindow-${lead_windows}
 
-    for categories in "MJO" "nonMJO" ; do
-        
-        for lead_window in $( seq 0 2 ) ; do
+    for selected_months in "12 01 02"; do
+
+        if [ "$selected_months" = "12 01 02" ] ; then
+               
+            category_label='$\phi_{\mathrm{DJF}}$'
+            
+        fi
+
+        categories=""
+        for year in $( seq $year_beg $year_end ); do 
            
-            category_str=$( echo "$categories" | sed -r "s/ /,/g" ) 
-            output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
-            output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
+            IFS=' ' read -r -a arr <<< "$selected_months" 
+            for _month in $selected_months ; do
+                categories="$categories $year-$_month"
+            done
+        done
+        
+        for lead_window in $( seq 2 ) ; do
+           
+            m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
+            output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
+            output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
 
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
@@ -97,6 +111,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --map-projection-name $region_projection \
                     --model-versions GEPS5 $GEPS6_group \
                     --category $categories \
+                    --category-label $category_label \
                     --lead-window $lead_window \
                     --varset $ECCC_varset \
                     --varname $varname \

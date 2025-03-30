@@ -4,11 +4,8 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=40
+batch_cnt_limit=41
 
-
-year_beg=1998
-year_end=2017
 
 
 
@@ -18,6 +15,7 @@ lead_windows=6
 
 params=(
     precip mtp 0
+
     UVTZ gh           850
     surf_avg ci 0
     surf_inst msl     0
@@ -94,14 +92,29 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     mkdir -p $output_error_dir
 
 
-    input_dir=$data_dir/analysis/output_analysis_map_window-${days_per_window}-leadwindow-${lead_windows}
+    input_dir=$data_dir/analysis/output_analysis_map_by_ym_window-${days_per_window}-leadwindow-${lead_windows}
 
-    for months in "12 1 2"; do
-        
+    for selected_months in "12 01 02"; do
+
+        if [ "$selected_months" = "12 01 02" ] ; then
+               
+            category_label='$\phi_{\mathrm{DJF}}$'
+            
+        fi
+
+        categories=""
+        for year in $( seq $year_beg $year_end ); do 
+           
+            IFS=' ' read -r -a arr <<< "$selected_months" 
+            for _month in $selected_months ; do
+                categories="$categories $year-$_month"
+            done
+        done
+ 
         #for lead_window in $( seq 0 $(( $lead_windows - 1 )) )  ; do
         for lead_window in $( seq 0 2 ) ; do
            
-            m_str=$( echo "$months" | sed -r "s/ /,/g" ) 
+            m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
             output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
 
@@ -110,13 +123,13 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
             else
-                python3 src/plot_map_prediction_error_diff_group.py \
+                python3 src/plot_map_prediction_error_diff_group_by_category.py \
                     --paper $paper \
                     --input-dir $input_dir \
                     --map-projection-name $region_projection \
                     --model-versions GEPS5 $GEPS6_group \
-                    --year-rng $year_beg $year_end \
-                    --months $months \
+                    --category $categories \
+                    --category-label "$category_label" \
                     --lead-window $lead_window \
                     --varset $ECCC_varset \
                     --varname $varname \

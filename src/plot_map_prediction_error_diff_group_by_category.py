@@ -16,7 +16,7 @@ def loadVariable(
     lead_window,
     level,
 ):
-
+    var3D = False
     filenames = []
     for category in selected_categories:
         filenames.append(
@@ -96,7 +96,7 @@ def loadVariable(
     new_ds = xr.merge([new_ds, total_cnt, total_ddof])
 
 
-    return new_ds
+    return new_ds, var3D
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--input-dir', type=str, help='Input directory.', required=True)
@@ -111,6 +111,7 @@ parser.add_argument('--cntr-level', type=int, help='Selected level if data is 3D
 
 parser.add_argument('--extra-title', type=str, help='Input directory.', default="")
 parser.add_argument('--category', type=str, nargs="+", help='categories needs to be count', required=True)
+parser.add_argument('--category-label', type=str, help='categories needs to be count', default=None)
 parser.add_argument('--level', type=int, help='Selected level if data is 3D.', default=None)
 parser.add_argument('--pval-threshold', type=float, help='Month to be processed.', default=0.1)
 parser.add_argument('--lead-window', type=int, help='Pentad to be processed.', required=True)
@@ -133,13 +134,12 @@ args.paper = args.paper == 1
 data = []
 cntr_data = []
 var3D = False
+cntr_var3D = False
 
 selected_categories = args.category
-
-
 for model_version in args.model_versions:
     print("# model_version : ", model_version)
-    ds = loadVariable(
+    ds, var3D = loadVariable(
         model_version,
         args.varset,
         args.varname,
@@ -148,18 +148,19 @@ for model_version in args.model_versions:
         args.level,
     )   
     data.append(ds)
-
+    
     if has_cntr:
-        cntr_data.append(
-            loadVariable(
-                model_version,
-                args.cntr_varset,
-                args.cntr_varname,
-                selected_categories, 
-                args.lead_window,
-                args.cntr_level,
-            ),
+        ds, cntr_var3D = loadVariable(
+            model_version,
+            args.cntr_varset,
+            args.cntr_varname,
+            selected_categories, 
+            args.lead_window,
+            args.cntr_level,
         )
+        cntr_data.append(ds)
+
+
 
 # Do student T-test
 diff_ds = data[1] - data[0]
@@ -229,15 +230,28 @@ for j in range(ds_ref.dims["latitude"]):
 
 
 
+def drop_element(arr, drop_elm):
+    new_arr = []
+    
+    for elm in arr:
+        if elm == drop_elm:
+            continue
+
+        new_arr.append(elm)
+
+
+    return np.array(new_arr)
+
+
 
 plot_infos = dict(
 
-     mtp = dict(
-        shading_levels = np.linspace(-1, 1, 21) * 10,
-        contour_levels = np.linspace(0, 1, 11) * 10,
-        factor = 1e-2,
-        label = "SIC",
-        unit  = "$\\%$",
+    mtp = dict(
+        shading_levels = np.linspace(-1, 1, 21) * 1,
+        contour_levels = drop_element(np.linspace(-1, 1, 9) * 2, 0.0),
+        factor = 1,
+        label = "$P_{\\mathrm{rain}}$",
+        unit  = "$ \\mathrm{mm} / \\mathrm{day} $",
     ),
 
 
@@ -307,7 +321,7 @@ plot_infos = dict(
 
     msl = dict(
         shading_levels = np.linspace(-1, 1, 21) * 2,
-        contour_levels = np.linspace(0, 1, 11) * 5,
+        contour_levels = drop_element(np.linspace(-1, 1, 21) * 5, 0.0),
         factor = 1e2,
         label = "$ P_\\mathrm{MSL} $",
         unit  = "hPa",
@@ -457,14 +471,20 @@ if args.paper:
     if var3D:
         label = label % (args.level,)
 
-    if args.category[0] == "MJO":
-        start_time_label = "\\phi_{\\mathrm{MJO}}" 
-    elif args.category[0] == "nonMJO":
-        start_time_label = "\\phi_{\\mathrm{xMJO}}" 
-    else:
-        start_time_label = "\\phi"
+    print("label")
 
-    _ax.set_title("$\\Delta B ($%s$; %s, p = %d)$" % (
+        
+    start_time_label = "$\\phi$"
+    
+    if args.category[0] == "MJO":
+        start_time_label = "$\\phi_{\\mathrm{MJO}}$" 
+    elif args.category[0] == "nonMJO":
+        start_time_label = "$\\phi_{\\mathrm{xMJO}}$" 
+   
+    if args.category_label is not None:
+        start_time_label = args.category_label
+
+    _ax.set_title("$\\Delta B ($%s$; $%s$, p = %d)$" % (
         label,
         start_time_label,
         args.lead_window+1,
