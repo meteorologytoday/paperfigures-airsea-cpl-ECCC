@@ -556,7 +556,6 @@ for __ax in [_ax, ]:
     if projection_name == "PlateCarree":
         __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
 
-spacing = 0.3
 
 cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
 cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)

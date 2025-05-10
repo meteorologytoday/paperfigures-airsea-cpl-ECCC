@@ -11,6 +11,8 @@ days_per_window=5
 lead_windows=6
 
 params=(
+    surf_hf_avg mslhf 0  surf_inst msl 0
+    precip mtp 0 AR IVT 0
     AR IVT 0 precip mtp 0
 )
 
@@ -96,7 +98,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             done
         done
         
-        for lead_window in $( seq 2 ) ; do
+        for lead_window in $( seq 0 2 ) ; do
            
             m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}

@@ -4,7 +4,7 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=41
+batch_cnt_limit=21
 
 
 
@@ -12,19 +12,28 @@ batch_cnt_limit=41
 days_per_window=5
 lead_windows=6
 
+#days_per_window=1
+#lead_windows=5
+
+
 
 params=(
-    precip mtp 0
 
-    UVTZ gh           850
-    surf_avg ci 0
+
     surf_inst msl     0
-
-    UVTZ gh           500
-    AR IVT            0
     surf_avg sst     0
-    surf_hf_avg mslhf 0
-    surf_hf_avg msshf 0
+
+#    UVTZ gh           850
+#    surf_avg ci 0
+
+
+#    UVTZ gh           500
+#    AR IVT            0
+
+#    surf_hf_avg mslhf 0
+#    surf_hf_avg msshf 0
+    
+#    precip mtp 0
 
 
 #    AR IWV            0
@@ -52,7 +61,7 @@ region_nparams=6
 
 nparams=3
 #for GEPS6_group in GEPS6sub1 GEPS6sub2 GEPS6 ; do
-for GEPS6_group in GEPS6sub1  ; do
+for GEPS6_group in GEPS6sub1 ; do #GEPS6sub1offset1  ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 
@@ -101,7 +110,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             category_label='$\phi_{\mathrm{DJF}}$'
             
         fi
-
+        
         categories=""
         for year in $( seq $year_beg $year_end ); do 
            
@@ -111,8 +120,8 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             done
         done
  
-        #for lead_window in $( seq 0 $(( $lead_windows - 1 )) )  ; do
-        for lead_window in $( seq 0 2 ) ; do
+        for lead_window in $( seq 0 $(( $lead_windows - 1 )) )  ; do
+        #for lead_window in $( seq 0 2 ) ; do
            
             m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}

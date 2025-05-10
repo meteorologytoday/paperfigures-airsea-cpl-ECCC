@@ -274,7 +274,7 @@ plot_infos = dict(
 
     IVT = dict(
         shading_levels = np.linspace(-1, 1, 21) * 30,
-        contour_levels = np.linspace(0, 1, 11) * 30,
+        contour_levels = drop_element(np.linspace(-1, 1, 13) * 30, 0.0),
         factor = 1.0,
         label = "IVT",
         unit  = "$\\mathrm{kg} / \\mathrm{m} / \\mathrm{s}$",
@@ -569,7 +569,7 @@ for __ax in [_ax, ]:
 
 
 
-cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.03, spacing=0.05)
+cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
 cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 
 unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
@@ -714,7 +714,7 @@ if args.output_error != "":
 
 
 
-    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.1, spacing=0.1, flag_ratio_thickness=False, flag_ratio_spacing=False)
+    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.03, spacing=0.05)
     cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 
     unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)

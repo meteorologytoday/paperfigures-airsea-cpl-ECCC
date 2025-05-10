@@ -21,13 +21,12 @@ window_size=5
 
 GEPS6_group=sub1
 
-
 echo "Figure 1 and 2: Estd and Emean error"
 
-for varname in "surf_inst-msl" "UVTZ-gh-850" "UVTZ-gh-500" ; do
+for varname in "surf_avg-sst" "surf_inst-msl" "UVTZ-gh-850" "UVTZ-gh-500" ; do
 for region in NPACATL ; do
 for stat in Emean Eabsmean ; do
-for month_str in "12,1,2" ; do
+for month_str in "12,01,02" ; do
 
     region_proj=${region}-Orthographic
    
@@ -45,15 +44,22 @@ done
 done
 
 svg_stack.py --direction=h \
-    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,1,2.svg \
-    $fig_dir/merged-UVTZ-gh-850-NPACATL-Emean-12,1,2.svg \
+    $fig_dir/merged-surf_inst-msl-NPACATL-Eabsmean-12,01,02.svg \
+    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,01,02.svg \
+    $fig_dir/merged-UVTZ-gh-850-NPACATL-Emean-12,01,02.svg \
     > $fig_dir/merged-fig1.svg
+
+
+#svg_stack.py --direction=h \
+#    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,01,02.svg \
+#    $fig_dir/merged-surf_inst-msl-NPACATL-Eabsmean-12,01,02.svg \
+#    > $fig_dir/merged-fig2.svg
 
 
 for varname in "AR-IVT" ; do
 for region in NPACATL ; do
 for stat in Emean Eabsmean ; do
-for month_str in "12,1,2" ; do
+for month_str in "12,01,02" ; do
 
     region_proj=${region}-PlateCarree
    
@@ -86,11 +92,26 @@ for category in nonMJO MJO; do
 done
 done
 
+echo "2: Making overlaping figures..."
+for region in NPACATL ; do
+for category in nonMJO MJO; do
+    region_proj=${region}-PlateCarree
+   
+
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_avg-sst_msl_${category}_lead-window-0.svg \
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-0.svg \
+        > $fig_dir/merged-overlaping-sst_lhf_msl-${region}-Emean-${category}.svg
+done
+done
+
+
 
 echo "Making Figure 3 stuff..."
 for region in NPACATL ; do
 for stat in Emean ; do
-for month_str in "12,1,2" ; do
+for month_str in "12,01,02" ; do
 
     region_proj=${region}-PlateCarree
    
@@ -127,6 +148,7 @@ done
 done
 done
 
+
 svg_stack.py --direction=h \
     $fig_dir/merged-MJO-surf_inst-msl-NPACATL-Emean.svg \
     $fig_dir/merged-nonMJO-surf_inst-msl-NPACATL-Emean.svg \
@@ -141,14 +163,16 @@ svg_stack.py --direction=h \
 
 
 
+
 name_pairs=(
-    merged-surf_inst-msl-NPACATL-Eabsmean-12,1,2.svg   fig01
-    merged-fig1.svg                                    fig02
-    merged-AR-IVT-NPACATL-Emean-12,1,2.svg             fig03
-    merged-MJOfig-Emean.svg                            fig04
-    merged-MJOfig-Eabsmean.svg                         fig05
-    merged-overlaping-lhf_msl-NPACATL-Emean-nonMJO.svg fig06
-    merged-UVTZ-gh-500-NPACATL-Emean-12,1,2.svg        figS01
+    merged-fig1.svg                                         fig01
+    merged-AR-IVT-NPACATL-Emean-12,01,02.svg                fig02
+    merged-MJOfig-Emean.svg                                 fig03
+    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO.svg  fig04
+    merged-MJOfig-Eabsmean.svg                              fig05
+
+#    merged-overlaping-lhf_msl-NPACATL-Emean-nonMJO.svg  fig06
+    merged-UVTZ-gh-500-NPACATL-Emean-12,01,02.svg       figS01
 )
 
 N=$(( ${#name_pairs[@]} / 2 ))

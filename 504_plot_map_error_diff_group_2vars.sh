@@ -11,8 +11,10 @@ days_per_window=5
 lead_windows=6
 
 params=(
-    AR IVT 0 precip mtp 0
-#    surf_hf_avg mslhf 0  surf_inst msl 0
+    precip mtp 0 precip mtp 0
+#    AR IVT 0 precip mtp 0
+    surf_hf_avg mslhf 0  surf_inst msl 0
+    surf_avg sst 0  surf_inst msl 0
 )
 
 region_params=(
