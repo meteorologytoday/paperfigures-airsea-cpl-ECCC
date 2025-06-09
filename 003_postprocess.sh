@@ -23,6 +23,8 @@ GEPS6_group=sub1
 
 echo "Figure 1 and 2: Estd and Emean error"
 
+
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 for varname in "surf_avg-sst" "surf_inst-msl" "UVTZ-gh-850" "UVTZ-gh-500" ; do
 for region in NPACATL ; do
 for stat in Emean Eabsmean ; do
@@ -93,6 +95,7 @@ done
 done
 
 echo "2: Making overlaping figures..."
+for lead_window in 0 1 2; do
 for region in NPACATL ; do
 for category in nonMJO MJO; do
     region_proj=${region}-PlateCarree
@@ -100,12 +103,12 @@ for category in nonMJO MJO; do
 
     svg_stack.py                                \
         --direction=v                           \
-        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_avg-sst_msl_${category}_lead-window-0.svg \
-        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-0.svg \
-        > $fig_dir/merged-overlaping-sst_lhf_msl-${region}-Emean-${category}.svg
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_avg-sst_msl_${category}_lead-window-${lead_window}.svg \
+        $fig_dir/fig_error_diff_Emean_by_CAT2-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-${lead_window}.svg \
+        > $fig_dir/merged-overlaping-sst_lhf_msl-${region}-Emean-${category}-lead-window-${lead_window}.svg
 done
 done
-
+done
 
 
 echo "Making Figure 3 stuff..."
@@ -150,29 +153,27 @@ done
 
 
 svg_stack.py --direction=h \
-    $fig_dir/merged-MJO-surf_inst-msl-NPACATL-Emean.svg \
     $fig_dir/merged-nonMJO-surf_inst-msl-NPACATL-Emean.svg \
+    $fig_dir/merged-MJO-surf_inst-msl-NPACATL-Emean.svg \
     > $fig_dir/merged-MJOfig-Emean.svg
 
 
 svg_stack.py --direction=h \
-    $fig_dir/fig_error_diff_Eabsmean_by_CAT2-5/group-GEPS6sub1/NPACATL-Orthographic/surf_inst-msl_MJO_lead-window-2.svg  \
     $fig_dir/fig_error_diff_Eabsmean_by_CAT2-5/group-GEPS6sub1/NPACATL-Orthographic/surf_inst-msl_nonMJO_lead-window-2.svg  \
+    $fig_dir/fig_error_diff_Eabsmean_by_CAT2-5/group-GEPS6sub1/NPACATL-Orthographic/surf_inst-msl_MJO_lead-window-2.svg  \
     > $fig_dir/merged-MJOfig-Eabsmean.svg
-
-
-
 
 
 name_pairs=(
     merged-fig1.svg                                         fig01
     merged-AR-IVT-NPACATL-Emean-12,01,02.svg                fig02
     merged-MJOfig-Emean.svg                                 fig03
-    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO.svg  fig04
+    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-0.svg  fig04
     merged-MJOfig-Eabsmean.svg                              fig05
 
 #    merged-overlaping-lhf_msl-NPACATL-Emean-nonMJO.svg  fig06
-    merged-UVTZ-gh-500-NPACATL-Emean-12,01,02.svg       figS01
+    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-1.svg  figS01
+    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-2.svg  figS02
 )
 
 N=$(( ${#name_pairs[@]} / 2 ))

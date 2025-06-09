@@ -121,6 +121,10 @@ parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of l
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
 parser.add_argument('--paper', type=int, default=0)
 
+parser.add_argument('--thumbnail-numbering-style', type=str, default="abc", choices=["abc", "123"])
+parser.add_argument('--thumbnail-numbering-Emean', type=int, default=-1)
+parser.add_argument('--thumbnail-numbering-Eabs', type=int, default=-1)
+
 parser.add_argument('--no-display', action="store_true")
 args = parser.parse_args()
 
@@ -396,6 +400,9 @@ projection_name = args.map_projection_name
 
 if projection_name == "PlateCarree":
 
+    title_font_size = 18
+
+
     plot_lon_l = args.plot_lon_rng[0] % 360.0
     plot_lon_r = args.plot_lon_rng[1] % 360.0
     plot_lat_b = args.plot_lat_rng[0]
@@ -415,22 +422,29 @@ if projection_name == "PlateCarree":
     
 elif projection_name == "Orthographic":
     
+    title_font_size = 18
+    
     map_projection = ccrs.Orthographic(260, 90)
     
 
 map_transform = ccrs.PlateCarree()
 
-h = 5
+
 ncol = 1
 nrow = 1
 
+
 if projection_name == "PlateCarree":
 
+    h = 5
     w_over_h = (plot_lon_r - plot_lon_l) / (plot_lat_t - plot_lat_b)
+    font_size_factor = 2.0
 
 elif projection_name == "Orthographic":
-    
-    w_over_h = 1
+
+    h = 5
+    w_over_h = 1.0
+    font_size_factor = 1.0
 
 w = h * w_over_h
 
@@ -441,7 +455,7 @@ figsize, gridspec_kw = tool_fig_config.calFigParams(
     wspace = 1.0,
     hspace = 0.5,
     w_left = 1.0,
-    w_right = 2.2,
+    w_right = 2.5,
     h_bottom = 1.0,
     h_top = 1.0,
     ncol = ncol,
@@ -484,11 +498,34 @@ if args.paper:
     if args.category_label is not None:
         start_time_label = args.category_label
 
-    _ax.set_title("$\\Delta B ($%s$; $%s$, p = %d)$" % (
+    thumbnail_str = ""
+
+    if args.thumbnail_numbering_Emean != -1:
+        if args.thumbnail_numbering_style == "abc":
+            thumbnail_str = "({number:s}) ".format(
+                number = "abcdefghijklmnopqrstuvwxyz"[args.thumbnail_numbering_Emean],
+            )
+        elif args.thumbnail_numbering_style == "123":
+            thumbnail_str = "({number:d}) ".format(
+                number = args.thumbnail_numbering_Emean + 1,
+            )
+    
+    cntr_title_str=""
+    if has_cntr:
+        label_cntr = plot_infos[args.cntr_varname]["label"]
+        cntr_title_str = " (shading), $\\Delta B ($%s$; $%s$, p = %d)$ (contour)" % (
+            label_cntr,
+            start_time_label,
+            args.lead_window+1,
+        )
+        
+    _ax.set_title("%s$\\Delta B ($%s$; $%s$, p = %d)$%s" % (
+        thumbnail_str,
         label,
         start_time_label,
         args.lead_window+1,
-    ), size=18)
+        cntr_title_str,
+    ), size=18 * font_size_factor)
 
 
 else:
@@ -499,7 +536,7 @@ else:
         ", ".join(args.category),
         args.lead_window,
         args.pval_threshold,
-    ), size=18)
+    ), size=18 * font_size_factor)
 
 
 
@@ -544,6 +581,8 @@ for _, collection in enumerate(cs.collections):
     collection.set_linewidth(0.)
 
 for __ax in [_ax, ]: 
+        
+    __ax.tick_params(axis='both', labelsize=15 * font_size_factor)
 
     gl = __ax.gridlines(crs=map_transform, draw_labels=True,
                       linewidth=1, color='gray', alpha=0.5, linestyle='--')
@@ -557,8 +596,8 @@ for __ax in [_ax, ]:
     
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
-    gl.xlabel_style = {'size': 12, 'color': 'black'}
-    gl.ylabel_style = {'size': 12, 'color': 'black'}
+    gl.xlabel_style = {'size': 12*font_size_factor, 'color': 'black'}
+    gl.ylabel_style = {'size': 12*font_size_factor, 'color': 'black'}
 
     __ax.set_global()
     #__ax.gridlines()
@@ -571,6 +610,7 @@ for __ax in [_ax, ]:
 
 cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
 cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
+cb.ax.tick_params(axis='both', labelsize=15 * font_size_factor)
 
 unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
 
@@ -583,7 +623,7 @@ else:
     
     label = "%s\n%s" % (label, unit_str)
 
-cb.ax.set_ylabel(label, size=25)
+cb.ax.set_ylabel(label, size=25 * font_size_factor)
 
 
 if not args.no_display:
@@ -611,7 +651,7 @@ if args.output_error != "":
         wspace = 1.0,
         hspace = 0.5,
         w_left = 1.0,
-        w_right = 2.2,
+        w_right = 2.5,
         h_bottom = 1.0,
         h_top = 1.0,
         ncol = ncol,
@@ -647,11 +687,36 @@ if args.output_error != "":
         else:
             start_time_label = "\\phi"
 
-        _ax.set_title("$\\Delta A ($%s$; %s, p = %d)$" % (
+        thumbnail_str = ""
+        
+        if args.thumbnail_numbering_Eabs != -1:
+
+            if args.thumbnail_numbering_style == "abc":
+                thumbnail_str = "({number:s}) ".format(
+                    number = "abcdefghijklmnopqrstuvwxyz"[args.thumbnail_numbering_Eabs],
+                )
+            elif args.thumbnail_numbering_style == "123":
+                thumbnail_str = "({number:d}) ".format(
+                    number = args.thumbnail_numbering_Eabs + 1,
+                )
+    
+ 
+        cntr_title_str=""
+        if has_cntr:
+            label_cntr = plot_infos[args.cntr_varname]["label"]
+            cntr_title_str = " (shading), $\\Delta A ($%s$; $%s$, p = %d)$ (contour)" % (
+                label_cntr,
+                start_time_label,
+                args.lead_window+1,
+            )
+            
+        _ax.set_title("%s$\\Delta A ($%s$; %s, p = %d)$%s" % (
+            thumbnail_str,
             label,
             start_time_label,
             args.lead_window+1,
-        ), size=18)
+            cntr_title_str,
+        ), size=18 * font_size_factor)
 
 
     else:
@@ -660,7 +725,7 @@ if args.output_error != "":
             args.model_versions[1],
             args.model_versions[0],
             ",".join(args.category),
-        ), size=18)
+        ), size=18 * font_size_factor)
 
     coords = diff_ds.coords
 
@@ -690,6 +755,8 @@ if args.output_error != "":
 
     for __ax in [_ax, ]: 
 
+        __ax.tick_params(axis='both', labelsize=15 * font_size_factor)
+
         gl = __ax.gridlines(crs=map_transform, draw_labels=True,
                           linewidth=1, color='gray', alpha=0.5, linestyle='--')
 
@@ -702,8 +769,8 @@ if args.output_error != "":
         
         gl.xformatter = LONGITUDE_FORMATTER
         gl.yformatter = LATITUDE_FORMATTER
-        gl.xlabel_style = {'size': 12, 'color': 'black'}
-        gl.ylabel_style = {'size': 12, 'color': 'black'}
+        gl.xlabel_style = {'size': 12*font_size_factor, 'color': 'black'}
+        gl.ylabel_style = {'size': 12*font_size_factor, 'color': 'black'}
 
         __ax.set_global()
         #__ax.gridlines()
@@ -714,8 +781,9 @@ if args.output_error != "":
 
 
 
-    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.03, spacing=0.05)
+    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
     cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
+    cb.ax.tick_params(axis='both', labelsize=15 * font_size_factor)
 
     unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
 
@@ -728,7 +796,7 @@ if args.output_error != "":
         
         label = "%s\n%s" % (label, unit_str)
 
-    cb.ax.set_ylabel(label, size=25)
+    cb.ax.set_ylabel(label, size=25 * font_size_factor)
 
 
     if args.output_error != "":

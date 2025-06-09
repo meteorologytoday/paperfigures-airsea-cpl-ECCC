@@ -22,13 +22,12 @@ params=(
 
     surf_inst msl     0
     surf_avg sst     0
-
-#    UVTZ gh           850
+    UVTZ gh           850
 #    surf_avg ci 0
 
 
 #    UVTZ gh           500
-#    AR IVT            0
+    AR IVT            0
 
 #    surf_hf_avg mslhf 0
 #    surf_hf_avg msshf 0
@@ -48,11 +47,9 @@ params=(
 )
 
 region_params=(
-    NPACATL PlateCarree  20 70 -250 20 
-    NPACATL Orthographic 20 90 -250 20 
-#    NPAC    PlateCarree 20 70 110 250
-#    NATL    PlateCarree 20 70 -90  20
-
+    GLOBAL  PlateCarree  -90 90 -250 109.99 
+#    NPACATL PlateCarree  20 70  -250 20 
+#    NPACATL Orthographic 20 90  -250 20 
 
     #NH 20 90 30 389.99 
 #    WORLD -90 90 0 359.99
@@ -127,7 +124,25 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
             output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
 
-            
+
+            numbering_Emean=-1
+            numbering_Eabs=-1
+           
+            # Arbitrary numbering for paper
+             
+            if [ "$varname" = "msl" ] ; then
+                numbering_Eabs=$(( 0 + $lead_window ))
+                numbering_Emean=$(( 3 + $lead_window ))
+            fi
+
+            if [ "$varname-$level" = "gh-850" ] ; then
+                numbering_Emean=$(( 6 + $lead_window ))
+            fi
+
+            if [ "$varname" = "IVT" ] ; then
+                numbering_Emean=$(( $lead_window ))
+            fi
+
 
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
@@ -146,6 +161,8 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --no-display \
                     --output $output \
                     --output-error $output_error \
+                    --thumbnail-numbering-Emean $numbering_Emean \
+                    --thumbnail-numbering-Eabs $numbering_Eabs \
                     --plot-lat-rng $region_lat_min $region_lat_max \
                     --plot-lon-rng $region_lon_min $region_lon_max & 
 

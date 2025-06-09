@@ -11,7 +11,7 @@ days_per_window=5
 lead_windows=6
 
 params=(
-    precip mtp 0 precip mtp 0
+#    precip mtp 0 precip mtp 0
 #    AR IVT 0 precip mtp 0
     surf_hf_avg mslhf 0  surf_inst msl 0
     surf_avg sst 0  surf_inst msl 0
@@ -90,6 +90,21 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
             output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
 
+            numbering_Emean=-1
+            numbering_Eabs=-1
+           
+            # Arbitrary numbering for paper
+            if [[ "$varname" = "sst" && "$cntr_varname" = "msl" ]] ; then
+                numbering_Emean=$(( 0 ))
+            fi
+
+            if [[ "$varname" = "mslhf" && "$cntr_varname" = "msl" ]] ; then
+                numbering_Emean=$(( 1 ))
+            fi
+
+
+
+
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
             else
@@ -109,6 +124,8 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --no-display \
                     --output $output \
                     --output-error $output_error \
+                    --thumbnail-numbering-Emean $numbering_Emean \
+                    --thumbnail-numbering-Eabs $numbering_Eabs \
                     --pval-threshold 0.1 \
                     --plot-lat-rng $region_lat_min $region_lat_max \
                     --plot-lon-rng $region_lon_min $region_lon_max & 

@@ -11,9 +11,9 @@ days_per_window=5
 lead_windows=6
 
 params=(
-    surf_hf_avg mslhf 0
+#    surf_hf_avg mslhf 0
 #    surf_hf_avg msshf 0
-    surf_avg ci     0
+#    surf_avg ci     0
 #    surf_avg sst     0
     surf_inst msl     0
 #    UVTZ gh           850
@@ -79,7 +79,21 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
             output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
 
-            
+            numbering_Emean=-1
+            numbering_Eabs=-1
+           
+            # Arbitrary numbering for paper
+            if [[ "$categories" = "nonMJO" &&  "$varname" = "msl" ]] ; then
+                numbering_Eabs=$(( 0 ))
+                numbering_Emean=$(( 0 + $lead_window ))
+            fi
+
+            if [[ "$categories" = "MJO"  && "$varname" = "msl" ]] ; then
+                numbering_Eabs=$(( 1 ))
+                numbering_Emean=$(( 3 + $lead_window ))
+
+            fi
+
 
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
@@ -95,6 +109,8 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --varname $varname \
                     --level $level \
                     --no-display \
+                    --thumbnail-numbering-Emean $numbering_Emean \
+                    --thumbnail-numbering-Eabs $numbering_Eabs \
                     --output $output \
                     --output-error $output_error \
                     --pval-threshold 0.1 \
