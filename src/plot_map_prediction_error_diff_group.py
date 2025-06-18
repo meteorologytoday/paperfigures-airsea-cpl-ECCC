@@ -662,7 +662,7 @@ if args.output_error != "":
     mappable = _ax.contourf(
         coords["longitude"], coords["latitude"],
         _shading,
-        levels=plot_info["shading_levels"],
+        levels=plot_info["shading_levels"] * 0.5,
         cmap=cmap, 
         extend="both", 
         transform=map_transform,

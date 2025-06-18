@@ -23,10 +23,11 @@ plot_codes=(
 
     # Fig 1
     $sh 501_plot_map_error_diff_group.sh
-    $sh 502_plot_map_error_diff_group_MJO.sh
-    $sh 503_plot_map_error_diff_group_MJO.sh
+#    $sh 502_plot_map_error_diff_group_MJO.sh
+    $sh 506_plot_map_error_diff_MJO_2vars.sh
+#    $sh 503_plot_map_error_diff_group_MJO.sh
 #    $sh 504_plot_map_error_diff_group_2vars.sh
-    $sh 505_plot_map_error_diff_ymgroup_2vars.sh
+#    $sh 505_plot_map_error_diff_ymgroup_2vars.sh
  
 )
 

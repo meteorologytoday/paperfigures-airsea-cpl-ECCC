@@ -15,6 +15,9 @@ mkdir -p $finalfig_png_dir
 mkdir -p $finalfig_svg_dir
 
 
+echo "Copy static figures"
+cp -r $staticfig_dir/* $fig_dir
+
 echo "Making final figures... "
 
 window_size=5
@@ -23,9 +26,7 @@ GEPS6_group=sub1
 
 echo "Figure 1 and 2: Estd and Emean error"
 
-
-echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-for varname in "surf_avg-sst" "surf_inst-msl" "UVTZ-gh-850" "UVTZ-gh-500" ; do
+for varname in "surf_avg-sst" "surf_inst-msl" "UVTZ-gh-500" ; do
 for region in NPACATL ; do
 for stat in Emean Eabsmean ; do
 for month_str in "12,01,02" ; do
@@ -35,9 +36,9 @@ for month_str in "12,01,02" ; do
 
     svg_stack.py                                \
         --direction=v                           \
-        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-0.svg                       \
-        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-1.svg                       \
-        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-2.svg                       \
+        $fig_dir/fig_error_diff_${stat}_by_ym-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-0.svg                       \
+        $fig_dir/fig_error_diff_${stat}_by_ym-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-1.svg                       \
+        $fig_dir/fig_error_diff_${stat}_by_ym-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-2.svg                       \
         > $fig_dir/merged-${varname}-${region}-${stat}-${month_str}.svg
 
 done
@@ -45,10 +46,17 @@ done
 done
 done
 
+#svg_stack.py --direction=h \
+#    $fig_dir/merged-surf_inst-msl-NPACATL-Eabsmean-12,01,02.svg \
+#    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,01,02.svg \
+#    $fig_dir/merged-UVTZ-gh-500-NPACATL-Emean-12,01,02.svg \
+#    > $fig_dir/merged-fig1.svg
+
+
+
 svg_stack.py --direction=h \
+    $fig_dir/merged-surf_avg-sst-NPACATL-Eabsmean-12,01,02.svg \
     $fig_dir/merged-surf_inst-msl-NPACATL-Eabsmean-12,01,02.svg \
-    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,01,02.svg \
-    $fig_dir/merged-UVTZ-gh-850-NPACATL-Emean-12,01,02.svg \
     > $fig_dir/merged-fig1.svg
 
 
@@ -57,7 +65,34 @@ svg_stack.py --direction=h \
 #    $fig_dir/merged-surf_inst-msl-NPACATL-Eabsmean-12,01,02.svg \
 #    > $fig_dir/merged-fig2.svg
 
+svg_stack.py --direction=h \
+    $fig_dir/merged-surf_avg-sst-NPACATL-Emean-12,01,02.svg \
+    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,01,02.svg \
+    $fig_dir/merged-UVTZ-gh-500-NPACATL-Emean-12,01,02.svg \
+    > $fig_dir/merged-fig2.svg
 
+
+echo "Figure 3: IVT dA and dB"
+for varname in "AR-IVT" ; do
+for region in NPACATL ; do
+for projection in PlateCarree ; do
+for month_str in "12,01,02" ; do
+for lead_window in 2 ; do
+    region_proj=${region}-${projection}
+   
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_error_diff_Eabsmean_by_ym-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-${lead_window}.svg  \
+        $fig_dir/fig_error_diff_Emean_by_ym-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-${lead_window}.svg  \
+        > $fig_dir/merged-${varname}-${region}-dAdB-${month_str}-lead_window-${lead_window}.svg
+
+done
+done
+done
+done
+done
+
+if [ ] ; then
 for varname in "AR-IVT" ; do
 for region in NPACATL ; do
 for stat in Emean Eabsmean ; do
@@ -77,8 +112,10 @@ done
 done
 done
 done
+fi
 
 
+if [ ] ; then
 echo "Making overlaping figures..."
 for region in NPACATL ; do
 for category in nonMJO MJO; do
@@ -109,28 +146,74 @@ for category in nonMJO MJO; do
 done
 done
 done
+fi
 
 
-echo "Making Figure 3 stuff..."
+echo "Figure 4: MJO dependency"
 for region in NPACATL ; do
+for projection in PlateCarree Orthographic ; do
 for stat in Emean ; do
 for month_str in "12,01,02" ; do
+for lead_window in 2 ; do
 
-    region_proj=${region}-PlateCarree
-   
+    region_proj=${region}-${projection}
 
     svg_stack.py                                \
         --direction=v                           \
-        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-0.svg                       \
-        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-1.svg                       \
-        $fig_dir/fig_worldmap_prediction_error_diff_${stat}_global_window-${window_size}-multimonths/group-GEPS6${GEPS6_group}/$region_proj/${varname}_1998-2017_${month_str}_lead-window-2.svg                       \
-        > $fig_dir/merged-${varname}-${region}-${stat}-${month_str}.svg
-
+        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_msl_NonMJO_lead-window-2.svg  \
+        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_msl_P1234_lead-window-2.svg   \
+        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_msl_P5678_lead-window-2.svg   \
+        > $fig_dir/merged-IVT-MJO-dependency-${projection}-${stat}-${month_str}-${lead_window}.svg
 done
 done
 done
+done
+done
+
+echo "Figure 5: Overlaping figures."
+if [ ] ; then
+for region in NPACATL ; do
+for projection in Orthographic PlateCarree ; do
+for category in "NonMJO"; do
+for lead_window in 0 1 2 ; do
+
+    region_proj=${region}-${projection}
+    svg_stack.py                                \
+        --direction=v                           \
+        $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_hf_avg-mslhf_msl_${category}_lead-window-${lead_window}.svg \
+        $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/surf_avg-sst_msl_${category}_lead-window-${lead_window}.svg \
+        > $fig_dir/merged-AL-analysis-${region_proj}-Emean-${category}-lead-window-${lead_window}.svg
+done
+done
+done
+done
+fi
+
+for region in NPAC NATL NPACATL ; do
+for projection in PlateCarree ; do
+    
+    for shading_varname in surf_avg-sst surf_hf_avg-mslhf ; do
+    for category in "NonMJO"; do
+
+        region_proj=${region}-${projection}
+        svg_stack.py                                \
+            --direction=h                           \
+            $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${shading_varname}_msl_${category}_lead-window-0.svg \
+            $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${shading_varname}_msl_${category}_lead-window-1.svg \
+            > $fig_dir/merged-hf-analysis-${region_proj}-Emean-${category}-${shading_varname}.svg
+    done
+    done
+
+    svg_stack.py --direction=v \
+        $fig_dir/merged-hf-analysis-${region_proj}-Emean-${category}-surf_avg-sst.svg \
+        $fig_dir/merged-hf-analysis-${region_proj}-Emean-${category}-surf_hf_avg-mslhf.svg \
+        > $fig_dir/merged-hf-analysis-${region_proj}-Emean-${category}.svg
+
+done
+done
 
 
+if [ ] ; then
 echo "Making Figure of MJO ..."
 for varname in "surf_inst-msl" ; do
 for region in NPACATL ; do
@@ -152,6 +235,7 @@ done
 done
 
 
+
 svg_stack.py --direction=h \
     $fig_dir/merged-nonMJO-surf_inst-msl-NPACATL-Emean.svg \
     $fig_dir/merged-MJO-surf_inst-msl-NPACATL-Emean.svg \
@@ -163,17 +247,38 @@ svg_stack.py --direction=h \
     $fig_dir/fig_error_diff_Eabsmean_by_CAT2-5/group-GEPS6sub1/NPACATL-Orthographic/surf_inst-msl_MJO_lead-window-2.svg  \
     > $fig_dir/merged-MJOfig-Eabsmean.svg
 
+fi
 
 name_pairs=(
-    merged-fig1.svg                                         fig01
-    merged-AR-IVT-NPACATL-Emean-12,01,02.svg                fig02
-    merged-MJOfig-Emean.svg                                 fig03
-    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-0.svg  fig04
-    merged-MJOfig-Eabsmean.svg                              fig05
+    merged-fig1.svg                                                                 fig01
+    merged-fig2.svg                                                                 fig02
+    merged-AR-IVT-NPACATL-dAdB-12,01,02-lead_window-2.svg                           fig03
+    merged-IVT-MJO-dependency-PlateCarree-Emean-12,01,02-2.svg                      fig04
+    merged-hf-analysis-NPAC-PlateCarree-Emean-NonMJO.svg                            fig05
+    MJO_categories.svg                                                              figS01
+    merged-hf-analysis-NATL-PlateCarree-Emean-NonMJO.svg                            figS02
+
+
+
+#    merged-AL-analysis-NPACATL-PlateCarree-Emean-NonMJO-lead-window-0.svg           fig05
+#    merged-AL-analysis-NPACATL-PlateCarree-Emean-NonMJO-lead-window-1.svg           fig06
+#    merged-AL-analysis-NPACATL-PlateCarree-Emean-NonMJO-lead-window-2.svg           fig07
+#    merged-overlaping-sst_lhf_msl-NPACATL-PlateCarree-Emean-1998-2017_12,01,02.svg  fig05
+
+#    merged-overlaping-sst_lhf_msl-NPACATL-Orthographic-Emean-1998-2017_12,01,02.svg fig05
+
+
+#    merged-AR-IVT-NPACATL-Eabsmean-12,01,02.svg                                     fig03
+#    merged-AR-IVT-NPACATL-Emean-12,01,02.svg                                        fig04
+
+#    merged-MJOfig-Emean.svg                                 fig03
+
+#    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-0.svg            fig04
+#    merged-MJOfig-Eabsmean.svg                              fig05
 
 #    merged-overlaping-lhf_msl-NPACATL-Emean-nonMJO.svg  fig06
-    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-1.svg  figS01
-    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-2.svg  figS02
+#    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-1.svg  figS01
+#    merged-overlaping-sst_lhf_msl-NPACATL-Emean-nonMJO-lead-window-2.svg  figS02
 )
 
 N=$(( ${#name_pairs[@]} / 2 ))

@@ -17,7 +17,7 @@ params=(
 #    surf_avg sst     0
     surf_inst msl     0
 #    UVTZ gh           850
-#    UVTZ gh           500
+    UVTZ gh           500
 )
 
 region_params=(

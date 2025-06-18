@@ -2,7 +2,7 @@
 py=python3
 sh=bash
 
-
+staticfig_dir=static_figures
 fig_dir=figures
 finalfig_dir=./final_figures
 data_dir=./data

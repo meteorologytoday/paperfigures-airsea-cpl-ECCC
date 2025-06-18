@@ -112,6 +112,7 @@ parser.add_argument('--cntr-level', type=int, help='Selected level if data is 3D
 parser.add_argument('--extra-title', type=str, help='Input directory.', default="")
 parser.add_argument('--category', type=str, nargs="+", help='categories needs to be count', required=True)
 parser.add_argument('--category-label', type=str, help='categories needs to be count', default=None)
+parser.add_argument('--start-time-label', type=str, help='categories needs to be count', default=None)
 parser.add_argument('--level', type=int, help='Selected level if data is 3D.', default=None)
 parser.add_argument('--pval-threshold', type=float, help='Month to be processed.', default=0.1)
 parser.add_argument('--lead-window', type=int, help='Pentad to be processed.', required=True)
@@ -120,6 +121,7 @@ parser.add_argument('--output-error', type=str, help='Output directory.', defaul
 parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of latitude', default=[-90, 90])
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
 parser.add_argument('--paper', type=int, default=0)
+parser.add_argument('--font-size-factor', type=float, default=None)
 
 parser.add_argument('--thumbnail-numbering-style', type=str, default="abc", choices=["abc", "123"])
 parser.add_argument('--thumbnail-numbering-Emean', type=int, default=-1)
@@ -332,8 +334,8 @@ plot_infos = dict(
     ),
 
     mslhf = dict(
-        shading_levels = np.linspace(-1, 1, 21) * 50,
-        contour_levels = np.linspace(0, 1, 11) * 50,
+        shading_levels = np.linspace(-1, 1, 13) * 30,
+        contour_levels = np.linspace(0, 1, 11) * 30,
         factor = 1,
         label = "$ H_\\mathrm{lat} $",
         unit  = "$ \\mathrm{W} \\, / \\, \\mathrm{m}^2 $",
@@ -424,7 +426,7 @@ elif projection_name == "Orthographic":
     
     title_font_size = 18
     
-    map_projection = ccrs.Orthographic(260, 90)
+    map_projection = ccrs.Orthographic(central_longitude=260, central_latitude=90)
     
 
 map_transform = ccrs.PlateCarree()
@@ -440,11 +442,16 @@ if projection_name == "PlateCarree":
     w_over_h = (plot_lon_r - plot_lon_l) / (plot_lat_t - plot_lat_b)
     font_size_factor = 2.0
 
+
 elif projection_name == "Orthographic":
 
     h = 5
     w_over_h = 1.0
     font_size_factor = 1.0
+
+
+if args.font_size_factor is not None:
+    font_size_factor = args.font_size_factor
 
 w = h * w_over_h
 
@@ -513,7 +520,7 @@ if args.paper:
     cntr_title_str=""
     if has_cntr:
         label_cntr = plot_infos[args.cntr_varname]["label"]
-        cntr_title_str = " (shading), $\\Delta B ($%s$; $%s$, p = %d)$ (contour)" % (
+        cntr_title_str = " (shading),\n$\\Delta B ($%s$; $%s$, p = %d)$ (contour)" % (
             label_cntr,
             start_time_label,
             args.lead_window+1,
@@ -704,7 +711,7 @@ if args.output_error != "":
         cntr_title_str=""
         if has_cntr:
             label_cntr = plot_infos[args.cntr_varname]["label"]
-            cntr_title_str = " (shading), $\\Delta A ($%s$; $%s$, p = %d)$ (contour)" % (
+            cntr_title_str = " (shading),\n$\\Delta A ($%s$; $%s$, p = %d)$ (contour)" % (
                 label_cntr,
                 start_time_label,
                 args.lead_window+1,
@@ -735,7 +742,7 @@ if args.output_error != "":
     mappable = _ax.contourf(
         coords["longitude"], coords["latitude"],
         _shading,
-        levels=plot_info["shading_levels"],
+        levels=plot_info["shading_levels"] * 0.5,
         cmap=cmap, 
         extend="both", 
         transform=map_transform,
