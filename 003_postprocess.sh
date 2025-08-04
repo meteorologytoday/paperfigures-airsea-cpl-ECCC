@@ -26,7 +26,7 @@ GEPS6_group=sub1
 
 echo "Figure 1 and 2: Estd and Emean error"
 
-for varname in "surf_avg-sst" "surf_inst-msl" "UVTZ-gh-500" ; do
+for varname in "surf_avg-sst" "surf_inst-msl" "UVTZ-gh-850" "UVTZ-gh-500" ; do
 for region in NPACATL ; do
 for stat in Emean Eabsmean ; do
 for month_str in "12,01,02" ; do
@@ -57,7 +57,48 @@ done
 svg_stack.py --direction=h \
     $fig_dir/merged-surf_avg-sst-NPACATL-Eabsmean-12,01,02.svg \
     $fig_dir/merged-surf_inst-msl-NPACATL-Eabsmean-12,01,02.svg \
-    > $fig_dir/merged-fig1.svg
+    > $fig_dir/merged-dA-map.svg
+
+
+
+echo "Figure: Timeseries"
+
+if [ ] ; then
+svg_stack.py --direction=h \
+    $fig_dir/fig_error_ts_Eabsmean_by_ym-5/NH/surf_avg-sst_1998-2017_12,01,02.svg \
+    $fig_dir/fig_error_ts_Eabsmean_by_ym-5/NH/surf_inst-msl_1998-2017_12,01,02.svg \
+    > $fig_dir/merged-ts-ym.svg
+fi
+
+for region in KCE GS ; do
+
+    input_dir=$fig_dir/fig_error_ts_Eabsmean_by_ym-5/$region
+
+    svg_stack.py --direction=h \
+        $input_dir/surf_avg-sst_1998-2017_12,01,02.svg \
+        $input_dir/UVTZ-gh-850_1998-2017_12,01,02.svg  \
+        $input_dir/AR-IWV_1998-2017_12,01,02.svg       \
+        $input_dir/AR-IVT_1998-2017_12,01,02.svg       \
+        > $fig_dir/merged-$region-ts-ym.svg
+
+done
+    
+svg_stack.py --direction=v \
+    $fig_dir/merged-KCE-ts-ym.svg \
+    $fig_dir/merged-GS-ts-ym.svg \
+    > $fig_dir/merged-KCE_GS-ts-ym.svg
+
+
+svg_stack.py --direction=h \
+    $fig_dir/fig_error_ts_Eabsmean_by_strictMJO-5/NH/AR-IVT_NonMJO.svg \
+    $fig_dir/fig_error_ts_Eabsmean_by_strictMJO-5/NH/AR-IVT_P1234.svg  \
+    $fig_dir/fig_error_ts_Eabsmean_by_strictMJO-5/NH/AR-IVT_P5678.svg  \
+    > $fig_dir/merged-ts-strictMJO-IVT.svg
+
+svg_stack.py --direction=h \
+    $fig_dir/fig_error_ts_Eabsmean_by_ym-5/NPAC/surf_avg-sst_1998-2017_12,01,02.svg \
+    $fig_dir/fig_error_ts_Eabsmean_by_ym-5/NATL/surf_avg-sst_1998-2017_12,01,02.svg \
+    > $fig_dir/merged-ts-ym-ocnbasin.svg
 
 
 #svg_stack.py --direction=h \
@@ -67,9 +108,9 @@ svg_stack.py --direction=h \
 
 svg_stack.py --direction=h \
     $fig_dir/merged-surf_avg-sst-NPACATL-Emean-12,01,02.svg \
-    $fig_dir/merged-surf_inst-msl-NPACATL-Emean-12,01,02.svg \
+    $fig_dir/merged-UVTZ-gh-850-NPACATL-Emean-12,01,02.svg \
     $fig_dir/merged-UVTZ-gh-500-NPACATL-Emean-12,01,02.svg \
-    > $fig_dir/merged-fig2.svg
+    > $fig_dir/merged-dB-map.svg
 
 
 echo "Figure 3: IVT dA and dB"
@@ -160,9 +201,9 @@ for lead_window in 2 ; do
 
     svg_stack.py                                \
         --direction=v                           \
-        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_msl_NonMJO_lead-window-2.svg  \
-        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_msl_P1234_lead-window-2.svg   \
-        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_msl_P5678_lead-window-2.svg   \
+        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_gh-850_NonMJO_lead-window-2.svg  \
+        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_gh-850_P1234_lead-window-2.svg   \
+        $fig_dir/fig_error_diff_${stat}_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/AR-IVT_gh-850_P5678_lead-window-2.svg   \
         > $fig_dir/merged-IVT-MJO-dependency-${projection}-${stat}-${month_str}-${lead_window}.svg
 done
 done
@@ -198,8 +239,8 @@ for projection in PlateCarree ; do
         region_proj=${region}-${projection}
         svg_stack.py                                \
             --direction=h                           \
-            $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${shading_varname}_msl_${category}_lead-window-0.svg \
-            $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${shading_varname}_msl_${category}_lead-window-1.svg \
+            $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${shading_varname}_gh-850_${category}_lead-window-0.svg \
+            $fig_dir/fig_error_diff_Emean_by_strictMJO-${window_size}/group-GEPS6${GEPS6_group}/$region_proj/${shading_varname}_gh-850_${category}_lead-window-1.svg \
             > $fig_dir/merged-hf-analysis-${region_proj}-Emean-${category}-${shading_varname}.svg
     done
     done
@@ -250,13 +291,17 @@ svg_stack.py --direction=h \
 fi
 
 name_pairs=(
-    merged-fig1.svg                                                                 fig01
-    merged-fig2.svg                                                                 fig02
-    merged-AR-IVT-NPACATL-dAdB-12,01,02-lead_window-2.svg                           fig03
-    merged-IVT-MJO-dependency-PlateCarree-Emean-12,01,02-2.svg                      fig04
-    merged-hf-analysis-NPAC-PlateCarree-Emean-NonMJO.svg                            fig05
+    merged-dA-map.svg                                                               fig01
+#    merged-ts-ym.svg                                                                fig02
+    merged-KCE_GS-ts-ym.svg                                                         fig02
+    merged-dB-map.svg                                                               fig03
+    merged-AR-IVT-NPACATL-dAdB-12,01,02-lead_window-2.svg                           fig04
+    merged-IVT-MJO-dependency-PlateCarree-Emean-12,01,02-2.svg                      fig05
+    merged-ts-strictMJO-IVT.svg                                                     fig06
+    merged-hf-analysis-NPAC-PlateCarree-Emean-NonMJO.svg                            fig07
     MJO_categories.svg                                                              figS01
-    merged-hf-analysis-NATL-PlateCarree-Emean-NonMJO.svg                            figS02
+    merged-ts-ym-ocnbasin.svg                                                       figS02
+    merged-hf-analysis-NATL-PlateCarree-Emean-NonMJO.svg                            figS03
 
 
 

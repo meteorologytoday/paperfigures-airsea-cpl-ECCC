@@ -7,7 +7,7 @@ import tool_fig_config
 import scipy
 import scipy.stats
 import cmocean
-
+import map_regions
 
 def expand_axis(arr, axis=0):
     
@@ -314,7 +314,7 @@ plot_infos = dict(
         shading_levels = np.linspace(-1, 1, 21) * 2,
         contour_levels = np.linspace(0, 1, 11) * 5,
         factor = 1e2,
-        label = "$ P_\\mathrm{MSL} $",
+        label = "MSLP",#$ P_\\mathrm{MSL} $",
         unit  = "hPa",
     ),
 
@@ -387,6 +387,8 @@ print("done")
 from scipy.stats import ttest_ind_from_stats
 
 rcParams['axes.titlepad'] = 10
+rcParams['hatch.color'] = (.3, .3, .3)
+#hatch_color = (.3, .3, .3)
 
 projection_name = args.map_projection_name
 
@@ -525,11 +527,11 @@ _significant_idx =  (pval < args.pval_threshold)
 _dot[ _significant_idx                 ] = 0.75
 _dot[ np.logical_not(_significant_idx) ] = 0.25
 
-cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "..."], transform=map_transform)
+cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
 
 # Remove the contour lines for hatches 
 for _, collection in enumerate(cs.collections):
-    collection.set_edgecolor((.2, .2, .2))
+    #collection.set_edgecolor((.2, .2, .2))
     collection.set_linewidth(0.)
 
 for __ax in [_ax, ]: 
@@ -555,6 +557,9 @@ for __ax in [_ax, ]:
 
     if projection_name == "PlateCarree":
         __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
+
+
+    map_regions.plotRegions(__ax, regions=["AL", "IL", "ASH"], transform=map_transform)
 
 
 cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
@@ -672,11 +677,11 @@ if args.output_error != "":
     _significant_idx =  (pval_Eabs < args.pval_threshold) 
     _dot[ _significant_idx                 ] = 0.75
     _dot[ np.logical_not(_significant_idx) ] = 0.25
-    cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "..."], transform=map_transform)
+    cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
 
     # Remove the contour lines for hatches 
     for _, collection in enumerate(cs.collections):
-        collection.set_edgecolor((.2, .2, .2))
+        #collection.set_edgecolor((.2, .2, .2))
         collection.set_linewidth(0.)
 
 
@@ -703,6 +708,8 @@ if args.output_error != "":
 
         if projection_name == "PlateCarree":
             __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
+    
+        map_regions.plotRegions(__ax, regions=["AL", "IL", "ASH"], transform=map_transform)
 
 
 

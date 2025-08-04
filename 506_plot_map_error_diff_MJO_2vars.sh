@@ -4,7 +4,7 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=10
+batch_cnt_limit=40
 
 
 days_per_window=5
@@ -17,14 +17,17 @@ params=(
 #    AR IVT 0 precip mtp 0
     AR IVT 0 surf_inst msl 0
     surf_avg sst 0  surf_inst msl 0
-    surf_hf_avg mslhf 0  surf_inst msl 0
+    #surf_hf_avg mslhf 0  surf_inst msl 0
+    surf_hf_avg mslhf 0  UVTZ gh 850
+    surf_avg sst 0       UVTZ gh 850
+    AR IVT 0 UVTZ gh 850
 
 )
 
 region_params=(
-    NPAC    PlateCarree    0  70    80  230 
-    NATL    PlateCarree    0  70   -90   20 
-    NPACATL PlateCarree   20  70  -250   20
+    NPAC    PlateCarree    0  75    80  230 
+    NATL    PlateCarree    0  75   -90   25 
+    NPACATL PlateCarree   20  75  -250   25
 #    NPACATL Orthographic  0 90  -250 20 
 
 #    GLOBAL  PlateCarree  -90 90 -250 109.99 
@@ -110,6 +113,24 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                 numbering_Emean=$(( 2 + $lead_window ))
             fi
 
+            if [[ "$varname" = "IVT" && "$cntr_varname" = "msl" ]] ; then
+                case "$categories" in
+                    NonMJO)
+                        numbering_Emean=0
+                        ;;
+                    P1234)
+                        numbering_Emean=1
+                        ;;
+                    P5678)
+                        numbering_Emean=2
+                        ;;
+                    *)
+                        numbering_Emean=-1
+                        ;;
+                esac
+            fi
+
+
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
             else
@@ -132,7 +153,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --output-error $output_error \
                     --thumbnail-numbering-Emean $numbering_Emean \
                     --thumbnail-numbering-Eabs $numbering_Eabs \
-                    --pval-threshold 0.1 \
+                    --pval-threshold 0.15 \
                     --plot-lat-rng $region_lat_min $region_lat_max \
                     --plot-lon-rng $region_lon_min $region_lon_max & 
 

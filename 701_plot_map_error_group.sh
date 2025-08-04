@@ -20,16 +20,14 @@ lead_windows=6
 
 params=(
     
+    surf_avg sst        0
     AR IVT            0
-    AR IWV            0
+#    AR IWV            0
     
-    UVTZ gh           850
+#    UVTZ gh           200
     UVTZ gh           500
     surf_inst msl       0
-    surf_avg sst        0
 
-
-#============================
     
 #    surf_avg ci 0
 #    precip mtp 0
@@ -51,8 +49,8 @@ region_params=(
 region_nparams=6
 
 nparams=3
-#for GEPS6_group in GEPS6sub1 GEPS6sub2 GEPS6 ; do
-for GEPS6_group in GEPS6sub1 ; do #GEPS6sub1offset1  ; do
+for group in GEPS6sub1 GEPS5 ; do
+#for GEPS6_group in GEPS6sub1 ; do #GEPS6sub1offset1  ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 
@@ -85,8 +83,8 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
         level_str="-${level}"
     fi 
 
-    output_dir=$fig_dir/fig_error_diff_Emean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
-    output_error_dir=$fig_dir/fig_error_diff_Eabsmean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
+    output_dir=$fig_dir/fig_error_Emean_by_ym-$days_per_window/group-${group}/$region_name-${region_projection}
+    output_error_dir=$fig_dir/fig_error_Eabsmean_by_ym-$days_per_window/group-${group}/$region_name-${region_projection}
 
     mkdir -p $output_dir
     mkdir -p $output_error_dir
@@ -143,15 +141,10 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                 numbering_Emean=$(( 1 ))
             fi
 
-            plot_region_box="none"
-            if [ "$region_projection" = "Orthographic" ] && [ "$lead_window" = "2" ] && ( [ "$varname-$level" = "gh-850" ] || [ "$varname-$level" = "gh-500" ] ) ; then
-                plot_region_box="circulation"
-                #echo "!!!!! Add Circulation Region Box !!!!!"
-            fi 
-
-            if [ "$region_projection" = "Orthographic" ] && [ "$lead_window" = "2" ] && [ "$varname" = "sst" ] ; then
-                plot_region_box="ocean"
-                #echo "!!!!! Add Ocean Region Box !!!!!"
+            plot_region_box="false"
+            if [ "$region_projection" = "Orthographic" ] && [ "$lead_window" = "2" ] && ( [ "$varname" = "msl" ] || [ "$varname-$level" = "gh-500" ] ) ; then
+                plot_region_box="true"
+                echo "!!!!! Add Region Box !!!!!"
             fi 
 
             if [ -f "$output" ] && [ -f "$output_error" ] ; then
@@ -161,7 +154,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --paper $paper \
                     --input-dir $input_dir \
                     --map-projection-name $region_projection \
-                    --model-versions GEPS5 $GEPS6_group \
+                    --model-versions $group \
                     --category $categories \
                     --category-label "$category_label" \
                     --lead-window $lead_window \

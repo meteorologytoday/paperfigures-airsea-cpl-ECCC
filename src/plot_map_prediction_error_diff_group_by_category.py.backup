@@ -12,7 +12,7 @@ import map_regions
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--input-dir', type=str, help='Input directory.', required=True)
 parser.add_argument('--map-projection-name', type=str, help='Map projection', required=True, choices=["PlateCarree", "Orthographic"])
-parser.add_argument('--model-versions', type=str, nargs="+", help='Input directory.', required=True)
+parser.add_argument('--model-versions', type=str, nargs=2, help='Input directory.', required=True)
 parser.add_argument('--varset',  type=str, help='Input directory.', default="surf_inst")
 parser.add_argument('--varname', type=str, help='Input directory.', default="mean_sea_level_pressure")
 
@@ -33,7 +33,7 @@ parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of l
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
 parser.add_argument('--paper', type=int, default=0)
 parser.add_argument('--font-size-factor', type=float, default=None)
-parser.add_argument('--plot-region-box', type=str, default="none")
+parser.add_argument('--plot-region-box', type=lambda x: x.lower() == "true", default=False)
 
 parser.add_argument('--thumbnail-numbering-style', type=str, default="abc", choices=["abc", "123"])
 parser.add_argument('--thumbnail-numbering-Emean', type=int, default=-1)
@@ -47,18 +47,6 @@ print(args)
 has_cntr = (args.cntr_varset is not None) and (args.cntr_varname is not None)
 
 args.paper = args.paper == 1
-
-number_of_groups = len(args.model_versions)
-
-plot_type = None
-if number_of_groups == 1:
-    plot_type = "one_group"
-elif number_of_groups == 2:
-    plot_type = "diff_group"
-else:
-    raise Exception("You need either 1 or 2 `--model-versions`.")
-
-
 
 
 data = []
@@ -94,87 +82,71 @@ for model_version in args.model_versions:
 
 
 
-print("cntr_var3D = ", cntr_var3D)
-
-
 # Do student T-test
-
-if number_of_groups == 1:
-    diff_ds = data[0]
-elif number_of_groups == 2:
-    diff_ds = data[1] - data[0]
-
+diff_ds = data[1] - data[0]
 ds_ref = data[0]
 
 if has_cntr:
-    if number_of_groups == 1:
-        diff_ds_cntr = cntr_data[0]
-    elif number_of_groups == 2:
-        diff_ds_cntr = cntr_data[1] - cntr_data[0]
-
+    diff_ds_cntr = cntr_data[1] - cntr_data[0]
 
 pval = np.zeros_like(diff_ds["total_Estd"])
 pval_Eabs = np.zeros_like(diff_ds["total_Eabsstd"])
 
+print("Compute p values for Emean")
 
-if number_of_groups == 2:
-
-    print("Compute p values for Emean")
-
-    npdata = []
-
-    for i in range(2):
-        npdata.append(dict(
-            mean = data[i]["total_Emean"].to_numpy(),
-            std  = data[i]["total_Estd"].to_numpy(),
-            ddof = np.max(data[i]["total_ddof"].to_numpy()),
-        ))
-     
-    for j in range(ds_ref.dims["latitude"]):
-        for i in range(ds_ref.dims["longitude"]):
-            
-            _tmp = scipy.stats.ttest_ind_from_stats(
-                mean1 = npdata[0]["mean"][j, i],
-                std1  = npdata[0]["std"][j, i],
-                nobs1 = npdata[0]["ddof"], #* 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                mean2 = npdata[1]["mean"][j, i],
-                std2  = npdata[1]["std"][j, i],
-                nobs2 = npdata[1]["ddof"],# * 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                equal_var = False,
-                alternative = "two-sided",
-            )
-            
-            pval[j, i] = _tmp.pvalue
-            
-
-
-
-    print("Compute p values for Eabs")
-
-    npdata = []
-    for i in range(2):
-        npdata.append(dict(
-            mean = data[i]["total_Eabsmean"].to_numpy(),
-            std  = data[i]["total_Eabsstd"].to_numpy(),
-            ddof = np.max(data[i]["total_ddof"].to_numpy()),
-        ))
+npdata = []
+for i in range(2):
+    npdata.append(dict(
+        mean = data[i]["total_Emean"].to_numpy(),
+        std  = data[i]["total_Estd"].to_numpy(),
+        ddof = np.max(data[i]["total_ddof"].to_numpy()),
+    ))
+ 
+for j in range(ds_ref.dims["latitude"]):
+    for i in range(ds_ref.dims["longitude"]):
         
-    for j in range(ds_ref.dims["latitude"]):
-        for i in range(ds_ref.dims["longitude"]):
-            
-            _tmp = scipy.stats.ttest_ind_from_stats(
-                mean1 = npdata[0]["mean"][j, i],
-                std1  = npdata[0]["std"][j, i],
-                nobs1 = npdata[0]["ddof"], #* 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                mean2 = npdata[1]["mean"][j, i],
-                std2  = npdata[1]["std"][j, i],
-                nobs2 = npdata[1]["ddof"],# * 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                equal_var = False,
-                alternative = "two-sided",
-            )
-            
-            pval_Eabs[j, i] = _tmp.pvalue
-            
+        _tmp = scipy.stats.ttest_ind_from_stats(
+            mean1 = npdata[0]["mean"][j, i],
+            std1  = npdata[0]["std"][j, i],
+            nobs1 = npdata[0]["ddof"], #* 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
+            mean2 = npdata[1]["mean"][j, i],
+            std2  = npdata[1]["std"][j, i],
+            nobs2 = npdata[1]["ddof"],# * 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
+            equal_var = False,
+            alternative = "two-sided",
+        )
+        
+        pval[j, i] = _tmp.pvalue
+        
+
+
+
+print("Compute p values for Eabs")
+
+npdata = []
+for i in range(2):
+    npdata.append(dict(
+        mean = data[i]["total_Eabsmean"].to_numpy(),
+        std  = data[i]["total_Eabsstd"].to_numpy(),
+        ddof = np.max(data[i]["total_ddof"].to_numpy()),
+    ))
+    
+for j in range(ds_ref.dims["latitude"]):
+    for i in range(ds_ref.dims["longitude"]):
+        
+        _tmp = scipy.stats.ttest_ind_from_stats(
+            mean1 = npdata[0]["mean"][j, i],
+            std1  = npdata[0]["std"][j, i],
+            nobs1 = npdata[0]["ddof"], #* 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
+            mean2 = npdata[1]["mean"][j, i],
+            std2  = npdata[1]["std"][j, i],
+            nobs2 = npdata[1]["ddof"],# * 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
+            equal_var = False,
+            alternative = "two-sided",
+        )
+        
+        pval_Eabs[j, i] = _tmp.pvalue
+        
 
 
 
@@ -436,6 +408,9 @@ if args.paper:
     if var3D:
         label = label % (args.level,)
 
+    print("label")
+
+        
     start_time_label = "$\\phi$"
     
     if args.category[0] == "MJO":
@@ -460,64 +435,31 @@ if args.paper:
     
     cntr_title_str=""
     if has_cntr:
-        
         label_cntr = plot_infos[args.cntr_varname]["label"]
-        if cntr_var3D:
-            label_cntr = label_cntr % (args.cntr_level,)
-
-
-        if number_of_groups == 1:
-            cntr_title_str = " (shading),\n$ B ($%s$; $%s$)$ (contour)" % (
-                label_cntr,
-                start_time_label,
-                args.lead_window+1,
-            )
+        cntr_title_str = " (shading),\n$\\Delta B ($%s$; $%s$, p = %d)$ (contour)" % (
+            label_cntr,
+            start_time_label,
+            args.lead_window+1,
+        )
         
-        elif number_of_groups == 2:
-            cntr_title_str = " (shading),\n$\\Delta B ($%s$; $%s$, p = %d)$ (contour)" % (
-                label_cntr,
-                start_time_label,
-                args.lead_window+1,
-            )
-
-
-    if number_of_groups == 1:
-        _ax.set_title("%s$ B ($%s$; $%s$, p = %d)$%s" % (
-            thumbnail_str,
-            label,
-            start_time_label,
-            args.lead_window+1,
-            cntr_title_str,
-        ), size=18 * font_size_factor)
-
-    elif number_of_groups == 2: 
-        _ax.set_title("%s$\\Delta B ($%s$; $%s$, p = %d)$%s" % (
-            thumbnail_str,
-            label,
-            start_time_label,
-            args.lead_window+1,
-            cntr_title_str,
-        ), size=18 * font_size_factor)
+    _ax.set_title("%s$\\Delta B ($%s$; $%s$, p = %d)$%s" % (
+        thumbnail_str,
+        label,
+        start_time_label,
+        args.lead_window+1,
+        cntr_title_str,
+    ), size=18 * font_size_factor)
 
 
 else:
-    
-    if number_of_groups == 1:
-        _ax.set_title("[%s] category=%s, lead_window=%d.\np value = %.2f" % (
-            args.model_versions[0],
-            ", ".join(args.category),
-            args.lead_window,
-            args.pval_threshold,
-        ), size=18 * font_size_factor)
 
-    elif number_of_groups == 2:
-        _ax.set_title("[%s minus %s] category=%s, lead_window=%d.\np value = %.2f" % (
-            args.model_versions[1],
-            args.model_versions[0],
-            ", ".join(args.category),
-            args.lead_window,
-            args.pval_threshold,
-        ), size=18 * font_size_factor)
+    _ax.set_title("[%s minus %s] category=%s, lead_window=%d.\np value = %.2f" % (
+        args.model_versions[1],
+        args.model_versions[0],
+        ", ".join(args.category),
+        args.lead_window,
+        args.pval_threshold,
+    ), size=18 * font_size_factor)
 
 
 
@@ -546,22 +488,20 @@ if has_cntr:
 #_ax.clabel(cs, fmt="%.1f")
 
 
-if number_of_groups == 2:
+# Plot the hatch to denote significant data
+_dot = np.zeros_like(pval)
+#_dot[:] = np.nan
 
-    # Plot the hatch to denote significant data
-    _dot = np.zeros_like(pval)
-    #_dot[:] = np.nan
+_significant_idx =  (pval < args.pval_threshold) 
+_dot[ _significant_idx                 ] = 0.75
+_dot[ np.logical_not(_significant_idx) ] = 0.25
 
-    _significant_idx =  (pval < args.pval_threshold) 
-    _dot[ _significant_idx                 ] = 0.75
-    _dot[ np.logical_not(_significant_idx) ] = 0.25
+cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
 
-    cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
-
-    # Remove the contour lines for hatches 
-    for _, collection in enumerate(cs.collections):
-        #collection.set_edgecolor((.2, .2, .2))
-        collection.set_linewidth(0.)
+# Remove the contour lines for hatches 
+for _, collection in enumerate(cs.collections):
+    #collection.set_edgecolor((.2, .2, .2))
+    collection.set_linewidth(0.)
 
 for __ax in [_ax, ]: 
         
@@ -589,12 +529,8 @@ for __ax in [_ax, ]:
     if projection_name == "PlateCarree":
         __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
    
-    if args.plot_region_box == "circulation": 
+    if args.plot_region_box: 
         map_regions.plotRegions(__ax, regions=["AL", "IL", "ASH"], transform=map_transform)
-
-    if args.plot_region_box == "ocean": 
-        map_regions.plotRegions(__ax, regions=["KCE", "GS",], transform=map_transform)
-
 
 
 
@@ -694,63 +630,32 @@ if args.output_error != "":
         cntr_title_str=""
         if has_cntr:
             label_cntr = plot_infos[args.cntr_varname]["label"]
-            if cntr_var3D:
-                label_cntr = label_cntr % (args.cntr_level,)
-
-
-            if number_of_groups == 1:
-                cntr_title_str = " (shading),\n$ A ($%s$; $%s$, p = %d)$ (contour)" % (
-                    label_cntr,
-                    start_time_label,
-                    args.lead_window+1,
-                )
-
-            elif number_of_groups == 2:    
-                cntr_title_str = " (shading),\n$\\Delta A ($%s$; $%s$, p = %d)$ (contour)" % (
-                    label_cntr,
-                    start_time_label,
-                    args.lead_window+1,
-                )
-        
-        if number_of_groups == 1:
-            _ax.set_title("%s$ A ($%s$; %s, p = %d)$%s" % (
-                thumbnail_str,
-                label,
+            cntr_title_str = " (shading),\n$\\Delta A ($%s$; $%s$, p = %d)$ (contour)" % (
+                label_cntr,
                 start_time_label,
                 args.lead_window+1,
-                cntr_title_str,
-            ), size=18 * font_size_factor)
-
-        elif number_of_groups == 2: 
-            _ax.set_title("%s$\\Delta A ($%s$; %s, p = %d)$%s" % (
-                thumbnail_str,
-                label,
-                start_time_label,
-                args.lead_window+1,
-                cntr_title_str,
-            ), size=18 * font_size_factor)
+            )
+            
+        _ax.set_title("%s$\\Delta A ($%s$; %s, p = %d)$%s" % (
+            thumbnail_str,
+            label,
+            start_time_label,
+            args.lead_window+1,
+            cntr_title_str,
+        ), size=18 * font_size_factor)
 
 
     else:
 
-        if number_of_groups == 1:
-            _ax.set_title("[%s] abs category=%s" % (
-                args.model_versions[0],
-                ",".join(args.category),
-            ), size=18 * font_size_factor)
-
-
-        elif number_of_groups == 2:
-            _ax.set_title("[%s minus %s] abs category=%s" % (
-                args.model_versions[1],
-                args.model_versions[0],
-                ",".join(args.category),
-            ), size=18 * font_size_factor)
+        _ax.set_title("[%s minus %s] abs category=%s" % (
+            args.model_versions[1],
+            args.model_versions[0],
+            ",".join(args.category),
+        ), size=18 * font_size_factor)
 
     coords = diff_ds.coords
 
-    #diff_da = data[1]["total_Eabsmean"] - data[0]["total_Eabsmean"]
-    diff_da = diff_ds["total_Eabsmean"]
+    diff_da = data[1]["total_Eabsmean"] - data[0]["total_Eabsmean"]
 
     _shading = diff_da.to_numpy() / plot_info["factor"]
     mappable = _ax.contourf(
@@ -762,17 +667,16 @@ if args.output_error != "":
         transform=map_transform,
     )
     
-    if number_of_groups == 2:
-        _dot = np.zeros_like(pval_Eabs)
-        _significant_idx =  (pval_Eabs < args.pval_threshold) 
-        _dot[ _significant_idx                 ] = 0.75
-        _dot[ np.logical_not(_significant_idx) ] = 0.25
-        cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
+    _dot = np.zeros_like(pval_Eabs)
+    _significant_idx =  (pval_Eabs < args.pval_threshold) 
+    _dot[ _significant_idx                 ] = 0.75
+    _dot[ np.logical_not(_significant_idx) ] = 0.25
+    cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
 
-        # Remove the contour lines for hatches 
-        for _, collection in enumerate(cs.collections):
-            #collection.set_edgecolor(hatch_color)
-            collection.set_linewidth(0.)
+    # Remove the contour lines for hatches 
+    for _, collection in enumerate(cs.collections):
+        #collection.set_edgecolor(hatch_color)
+        collection.set_linewidth(0.)
 
 
     for __ax in [_ax, ]: 
@@ -801,11 +705,8 @@ if args.output_error != "":
         if projection_name == "PlateCarree":
             __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
     
-        if args.plot_region_box == "circulation": 
+        if args.plot_region_box: 
             map_regions.plotRegions(__ax, regions=["AL", "IL", "ASH"], transform=map_transform)
-
-        if args.plot_region_box == "ocean": 
-            map_regions.plotRegions(__ax, regions=["KCE", "GS",], transform=map_transform)
 
 
 
