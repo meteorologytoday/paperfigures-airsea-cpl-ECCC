@@ -28,7 +28,7 @@ parser.add_argument('--level', type=int, help='Selected level if data is 3D.', d
 parser.add_argument('--pval-threshold', type=float, help='Month to be processed.', default=0.1)
 parser.add_argument('--lead-window', type=int, help='Pentad to be processed.', required=True)
 parser.add_argument('--output', type=str, help='Output directory.', default="")
-parser.add_argument('--output-error', type=str, help='Output directory.', default="")
+#parser.add_argument('--output-error', type=str, help='Output directory.', default="")
 parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of latitude', default=[-90, 90])
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
 parser.add_argument('--paper', type=int, default=0)
@@ -37,7 +37,7 @@ parser.add_argument('--plot-region-box', type=str, default="none")
 
 parser.add_argument('--thumbnail-numbering-style', type=str, default="abc", choices=["abc", "123"])
 parser.add_argument('--thumbnail-numbering-Emean', type=int, default=-1)
-parser.add_argument('--thumbnail-numbering-Eabs', type=int, default=-1)
+#parser.add_argument('--thumbnail-numbering-Eabs', type=int, default=-1)
 
 parser.add_argument('--no-display', action="store_true")
 args = parser.parse_args()
@@ -114,7 +114,7 @@ if has_cntr:
 
 
 pval = np.zeros_like(diff_ds["total_Estd"])
-pval_Eabs = np.zeros_like(diff_ds["total_Eabsstd"])
+#pval_Eabs = np.zeros_like(diff_ds["total_Eabsstd"])
 
 
 if number_of_groups == 2:
@@ -149,6 +149,7 @@ if number_of_groups == 2:
 
 
 
+    """
     print("Compute p values for Eabs")
 
     npdata = []
@@ -175,7 +176,7 @@ if number_of_groups == 2:
             
             pval_Eabs[j, i] = _tmp.pvalue
             
-
+    """
 
 
 def drop_element(arr, drop_elm):
@@ -302,7 +303,7 @@ plot_infos = dict(
 
     gh = dict(
         shading_levels = np.linspace(-1, 1, 21) * 20,
-        contour_levels = np.linspace(0, 1, 5) * 20,
+        contour_levels = np.arange(-40, 41, 4),
         factor = 1,
         label = "$Z_{%d}$",
         unit  = "$ \\mathrm{m} $",
@@ -405,7 +406,7 @@ figsize, gridspec_kw = tool_fig_config.calFigParams(
     h = h,
     wspace = 1.0,
     hspace = 0.5,
-    w_left = 1.0,
+    w_left = 1.5,
     w_right = 2.5,
     h_bottom = 1.0,
     h_top = h_top,
@@ -474,7 +475,7 @@ if args.paper:
             )
         
         elif number_of_groups == 2:
-            cntr_title_str = " (shading),\n$\\Delta B ($%s$; $%s$, p = %d)$ (contour)" % (
+            cntr_title_str = " (shading),\n$\\Delta B ($%s$; $%s$, $pentad$ = %d)$ (contour)" % (
                 label_cntr,
                 start_time_label,
                 args.lead_window+1,
@@ -482,7 +483,7 @@ if args.paper:
 
 
     if number_of_groups == 1:
-        _ax.set_title("%s$ B ($%s$; $%s$, p = %d)$%s" % (
+        _ax.set_title("%s$ B ($%s$; $%s$, $pentad$ = %d)$%s" % (
             thumbnail_str,
             label,
             start_time_label,
@@ -491,7 +492,7 @@ if args.paper:
         ), size=18 * font_size_factor)
 
     elif number_of_groups == 2: 
-        _ax.set_title("%s$\\Delta B ($%s$; $%s$, p = %d)$%s" % (
+        _ax.set_title("%s$\\Delta B ($%s$; $%s$, $pentad$ = %d)$%s" % (
             thumbnail_str,
             label,
             start_time_label,
@@ -538,7 +539,7 @@ if has_cntr:
 
     cntr_plot_info = plot_infos[args.cntr_varname]
     _cntr = diff_ds_cntr["total_Emean"].to_numpy() / cntr_plot_info["factor"]
-    cs = _ax.contour(coords["longitude"], coords["latitude"], _cntr, levels=cntr_plot_info["contour_levels"], colors="k",linewidths=1, transform=map_transform, alpha=0.8, zorder=10)
+    cs = _ax.contour(coords["longitude"], coords["latitude"], _cntr, levels=cntr_plot_info["contour_levels"], colors="k",linewidths=2, transform=map_transform, alpha=0.8, zorder=10)
     _ax.clabel(cs, fmt="%.1f")
 
 #_contour = pval
@@ -565,7 +566,7 @@ if number_of_groups == 2:
 
 for __ax in [_ax, ]: 
         
-    __ax.tick_params(axis='both', labelsize=15 * font_size_factor)
+    #__ax.tick_params(axis='both', labelsize=15 * font_size_factor)
 
     gl = __ax.gridlines(crs=map_transform, draw_labels=True,
                       linewidth=1, color='gray', alpha=0.5, linestyle='--')
@@ -579,12 +580,12 @@ for __ax in [_ax, ]:
     
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
-    gl.xlabel_style = {'size': 12*font_size_factor, 'color': 'black'}
-    gl.ylabel_style = {'size': 12*font_size_factor, 'color': 'black'}
+    gl.xlabel_style = {'size': 20 * font_size_factor, 'color': 'black'}
+    gl.ylabel_style = {'size': 20 * font_size_factor, 'color': 'black'}
 
     __ax.set_global()
     #__ax.gridlines()
-    __ax.coastlines(color='gray')
+    __ax.coastlines(color='gray', linewidth=2)
 
     if projection_name == "PlateCarree":
         __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
@@ -598,7 +599,7 @@ for __ax in [_ax, ]:
 
 
 
-cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
+cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.5, flag_ratio_thickness=False, flag_ratio_spacing=False)
 cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
 cb.ax.tick_params(axis='both', labelsize=15 * font_size_factor)
 
@@ -625,6 +626,8 @@ if args.output != "":
     fig.savefig(args.output, dpi=200)
 
 print("Finished.")
+
+"""
 
 if args.output_error != "":
 
@@ -835,4 +838,4 @@ if args.output_error != "":
     print("Finished.")
 
 
-
+"""

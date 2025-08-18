@@ -10,8 +10,9 @@ else
 
     echo "___TRAPKILL___ is not set. Do it now."
 
-    trap "exit" INT TERM
-    trap "echo 'Exiting... ready to kill jobs... '; kill 0" EXIT
+    trap 'echo "Exiting... kill jobs now!"; pkill -9 -P $$' SIGINT SIGTERM
+    #trap "exit" INT TERM
+    #trap "echo 'Exiting... ready to kill jobs... '; kill 0" EXIT
 
     ___TRAPKILL___=TRUE
 fi

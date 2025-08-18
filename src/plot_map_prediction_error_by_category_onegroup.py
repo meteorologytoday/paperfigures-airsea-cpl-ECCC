@@ -274,7 +274,7 @@ plot_infos = dict(
 
     gh = dict(
         shading_levels = np.linspace(-1, 1, 21) * 20,
-        contour_levels = np.linspace(0, 1, 5) * 20,
+        contour_levels = np.linspace(-1, 1, 11) * 20,
         factor = 1,
         label = "$Z_{%d}$",
         unit  = "$ \\mathrm{m} $",
@@ -480,7 +480,8 @@ if has_cntr:
 
     cntr_plot_info = plot_infos[args.cntr_varname]
     _cntr = diff_ds_cntr["total_Emean"].to_numpy() / cntr_plot_info["factor"]
-    cs = _ax.contour(coords["longitude"], coords["latitude"], _cntr, levels=cntr_plot_info["contour_levels"], colors="k",linewidths=1, transform=map_transform, alpha=0.8, zorder=10)
+    print("CONTOUR: ", cntr_plot_info["contour_levels"])
+    cs = _ax.contour(coords["longitude"], coords["latitude"], _cntr, levels=cntr_plot_info["contour_levels"], colors="k", linewidths=2, transform=map_transform, alpha=0.8, zorder=10)
     _ax.clabel(cs, fmt="%.1f")
 
 #_contour = pval

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-nproc=5
+nproc=1
 
 while getopts "p:" arg ; do
     case $arg in
@@ -23,8 +23,10 @@ plot_codes=(
 
     # Fig 1
     $sh 501_plot_map_error_diff_group.sh
-#    $sh 502_plot_map_error_diff_group_MJO.sh
+    $sh 502_plot_map_error_by_ym_2var.sh
     $sh 506_plot_map_error_diff_MJO_2vars.sh
+    $sh 601_plot_timeseries.sh
+    $sh 602_plot_timeseries_by_MJO.sh
 #    $sh 503_plot_map_error_diff_group_MJO.sh
 #    $sh 504_plot_map_error_diff_group_2vars.sh
 #    $sh 505_plot_map_error_diff_ymgroup_2vars.sh
@@ -37,7 +39,7 @@ echo "We have $N file(s) to run..."
 for i in $( seq 1 $(( ${#plot_codes[@]} / $nparams )) ) ; do
    
     echo "#### This is the $i-th command. ####"
- 
+
     {
         PROG="${plot_codes[$(( (i-1) * $nparams + 0 ))]}"
         FILE="${plot_codes[$(( (i-1) * $nparams + 1 ))]}"
@@ -55,7 +57,6 @@ for i in $( seq 1 $(( ${#plot_codes[@]} / $nparams )) ) ; do
         wait
         proc_cnt=0
     fi
-
          
 done
 

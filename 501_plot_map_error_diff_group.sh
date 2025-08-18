@@ -4,7 +4,7 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=31
+batch_cnt_limit=11
 #batch_cnt_limit=1
 
 
@@ -25,7 +25,7 @@ params=(
     
     UVTZ gh           850
     UVTZ gh           500
-    surf_inst msl       0
+#    surf_inst msl       0
     surf_avg sst        0
 
 
@@ -42,13 +42,14 @@ params=(
 )
 
 region_params=(
-    NPACATL PlateCarree  20 75  -250 25 
-    NPACATL Orthographic 0  90  -250 20 
+
+    NPACATL Orthographic 0  90  -250 20 1.0
+    NPACATL PlateCarree  20 75  -250 25 1.5
 #    GLOBAL  PlateCarree  -90 90 -250 109.99 
     #NH 20 90 30 389.99 
 #    WORLD -90 90 0 359.99
 )
-region_nparams=6
+region_nparams=7
 
 nparams=3
 #for GEPS6_group in GEPS6sub1 GEPS6sub2 GEPS6 ; do
@@ -70,6 +71,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     region_lat_max="${region_params[$(( j * $region_nparams + 3 ))]}"
     region_lon_min="${region_params[$(( j * $region_nparams + 4 ))]}"
     region_lon_max="${region_params[$(( j * $region_nparams + 5 ))]}"
+    region_font_size_factor="${region_params[$(( j * $region_nparams + 6 ))]}"
     
     echo ":: region_name = $region_name"
     echo ":: region_projection = $region_projection"
@@ -77,7 +79,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     echo ":: region_lat_max = $region_lat_max"
     echo ":: region_lon_min = $region_lon_min"
     echo ":: region_lon_max = $region_lon_max"
-
+    echo ":: region_font_size_factor = $region_font_size_factor"
 
     if [ "$level" = "0" ] ; then
         level_str=""
@@ -86,10 +88,8 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     fi 
 
     output_dir=$fig_dir/fig_error_diff_Emean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
-    output_error_dir=$fig_dir/fig_error_diff_Eabsmean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
 
     mkdir -p $output_dir
-    mkdir -p $output_error_dir
 
 
     input_dir=$data_dir/analysis/output_analysis_map_by_ym_window-${days_per_window}-leadwindow-${lead_windows}
@@ -97,9 +97,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     for selected_months in "12 01 02"; do
 
         if [ "$selected_months" = "12 01 02" ] ; then
-               
             category_label='$\phi_{\mathrm{DJF}}$'
-            
         fi
         
         categories=""
@@ -116,30 +114,26 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
            
             m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
             output=$output_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
-            output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
+            #output_error=$output_error_dir/${ECCC_varset}-${varname}${level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
 
 
             numbering_Emean=-1
-            numbering_Eabs=-1
            
             # Arbitrary numbering for paper
  
             if [ "$varname" = "sst" ] ; then
-                numbering_Eabs=$(( 0 + $lead_window ))
                 numbering_Emean=$(( 0 + $lead_window ))
             fi
             
-            if [ "$varname" = "msl" ] ; then
-                numbering_Eabs=$(( 3 + $lead_window ))
+            if [ "${varname}${level_str}" = "gh-850" ] ; then
                 numbering_Emean=$(( 3 + $lead_window ))
             fi
 
-            if [ "$varname-$level" = "gh-500" ] ; then
+            if [ "${varname}${level_str}" = "gh-500" ] ; then
                 numbering_Emean=$(( 6 + $lead_window ))
             fi
 
             if [ "$varname" = "IVT" ] ; then
-                numbering_Eabs=$(( 0  ))
                 numbering_Emean=$(( 1 ))
             fi
 
@@ -154,7 +148,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                 #echo "!!!!! Add Ocean Region Box !!!!!"
             fi 
 
-            if [ -f "$output" ] && [ -f "$output_error" ] ; then
+            if [ -f "$output" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
             else
                 python3 src/plot_map_prediction_error_diff_group_by_category.py \
@@ -170,12 +164,11 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --level $level \
                     --no-display \
                     --output $output \
-                    --output-error $output_error \
                     --thumbnail-numbering-Emean $numbering_Emean \
-                    --thumbnail-numbering-Eabs $numbering_Eabs \
                     --plot-region-box $plot_region_box \
                     --plot-lat-rng $region_lat_min $region_lat_max \
-                    --plot-lon-rng $region_lon_min $region_lon_max & 
+                    --plot-lon-rng $region_lon_min $region_lon_max \
+                    --font-size-factor $region_font_size_factor    & 
 
 #                    --plot-lat-rng 0 65    \
 #                    --plot-lon-rng 110 250  &

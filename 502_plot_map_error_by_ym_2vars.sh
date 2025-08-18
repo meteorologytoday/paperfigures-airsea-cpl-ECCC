@@ -4,24 +4,20 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=10
+batch_cnt_limit=5
 
 
 days_per_window=5
 lead_windows=6
 
-classify_method=strictMJO
-
 params=(
-    surf_hf_avg mslhf 0  UVTZ gh 850
-    surf_avg sst 0       UVTZ gh 850
     AR IVT 0 UVTZ gh 850
 )
 
 region_params=(
-    NPACATL PlateCarree   20  75  -250   25  1.5
-    NPAC    PlateCarree    0  75    80  230  1.5
-    NATL    PlateCarree    0  75   -90   25  1.5
+    NPACATL PlateCarree   20  75  -250   25    1.5
+#    NPAC    PlateCarree    0  75    80  230   1.0
+#    NATL    PlateCarree    0  75   -90   25   1.0
 
 )
 region_nparams=7
@@ -78,50 +74,36 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
     fi 
 
 
-    output_dir=$fig_dir/fig_error_diff_Emean_by_${classify_method}-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
+    output_dir=$fig_dir/fig_error_diff_Emean_by_ym-$days_per_window/group-${GEPS6_group}/$region_name-${region_projection}
 
     mkdir -p $output_dir
 
-    input_dir=$data_dir/analysis/output_analysis_map_by_${classify_method}_window-${days_per_window}-leadwindow-${lead_windows}
+    input_dir=$data_dir/analysis/output_analysis_map_by_ym_window-${days_per_window}-leadwindow-${lead_windows}
 
-    for categories in "NonMJO" "P1234" "P5678" ; do
-        
-        for lead_window in $( seq 0 2 ) ; do
+    for selected_months in "12 01 02"; do
+ 
+        if [ "$selected_months" = "12 01 02" ] ; then
+            category_label='$\phi_{\mathrm{DJF}}$'
+        fi
+ 
+        categories=""
+        for year in $( seq $year_beg $year_end ); do 
            
-            category_str=$( echo "$categories" | sed -r "s/ /,/g" ) 
-            output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${category_str}_lead-window-${lead_window}.${fig_fmt}
+            IFS=' ' read -r -a arr <<< "$selected_months" 
+            for _month in $selected_months ; do
+                categories="$categories $year-$_month"
+            done
+        done
+       
+        for lead_window in $( seq 0 2 ) ; do
+ 
+            m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
+            output=$output_dir/${ECCC_varset}-${varname}${level_str}_${cntr_varname}${cntr_level_str}_${year_beg}-${year_end}_${m_str}_lead-window-${lead_window}.${fig_fmt}
 
             numbering_Emean=-1
            
-            # Arbitrary numbering for paper
-            if [[ "$varname" = "sst" && "${cntr_varname}${cntr_level_str}" = "gh-850" ]] ; then
-                numbering_Emean=$(( 0 + $lead_window ))
-            fi
-
-            if [[ "$varname" = "mslhf" && "${cntr_varname}${cntr_level_str}" = "gh-850" ]] ; then
-                numbering_Emean=$(( 2 + $lead_window ))
-            fi
-
-            if [[ "$varname" = "IVT" && "${cntr_varname}${cntr_level_str}" = "gh-850" ]] ; then
-                case "$categories" in
-                    NonMJO)
-                        numbering_Emean=0
-                        ;;
-                    P1234)
-                        numbering_Emean=1
-                        ;;
-                    P5678)
-                        numbering_Emean=2
-                        ;;
-                    *)
-                        numbering_Emean=-1
-                        ;;
-                esac
-            fi
-
-
             if [ -f "$output" ] ; then
-                echo "Output file $output exists. Skip."
+                echo "Output file $output exist. Skip."
             else
                 python3 src/plot_map_prediction_error_diff_group_by_category.py \
                     --paper $paper \
@@ -129,7 +111,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --map-projection-name $region_projection \
                     --model-versions GEPS5 $GEPS6_group \
                     --category $categories \
-                    --category-label "\$\\phi_{\\mathrm{${categories}}}\$" \
+                    --category-label "$category_label" \
                     --lead-window $lead_window \
                     --varset $ECCC_varset \
                     --varname $varname \
@@ -139,11 +121,14 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --cntr-level   $cntr_level \
                     --no-display \
                     --output $output \
-                    --thumbnail-numbering-Emean $numbering_Emean \
-                    --pval-threshold 0.10 \
+                    --thumbnail-numbering-Emean $numbering_Emean   \
+                    --pval-threshold 0.1                           \
                     --plot-lat-rng $region_lat_min $region_lat_max \
                     --plot-lon-rng $region_lon_min $region_lon_max \
                     --font-size-factor $region_font_size_factor  & 
+
+#                    --plot-lat-rng 0 65    \
+#                    --plot-lon-rng 110 250  &
 
 
                 batch_cnt=$(( $batch_cnt + 1)) 
