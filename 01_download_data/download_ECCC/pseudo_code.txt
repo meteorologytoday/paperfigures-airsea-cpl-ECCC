@@ -1,0 +1,20 @@
+
+
+Prep: 
+
+ - A list of reforecast dates
+ - A list of model version dates
+ - A mapping of (model_version, reforecast_date) => (model_version_date, reforecast_date)
+ 
+
+Downloading pseudo code
+
+1. Batch parameter: 
+    model_version, reforecast_date, runs (ctl/perturbation)
+
+2. Requests: 
+    
+    - UVT
+    - Q
+    - W
+    - surface parameter

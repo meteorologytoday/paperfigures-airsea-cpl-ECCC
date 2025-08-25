@@ -314,7 +314,7 @@ else:
 
 
 lcs = [
-    "maroon",
+    "red",
     "dodgerblue",
 ]
 

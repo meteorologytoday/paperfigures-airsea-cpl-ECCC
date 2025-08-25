@@ -22,15 +22,12 @@ mkdir -p $fig_dir
 plot_codes=(
 
     # Fig 1
+    $sh 100_stat_data.sh
     $sh 501_plot_map_error_diff_group.sh
     $sh 502_plot_map_error_by_ym_2var.sh
     $sh 506_plot_map_error_diff_MJO_2vars.sh
     $sh 601_plot_timeseries.sh
     $sh 602_plot_timeseries_by_MJO.sh
-#    $sh 503_plot_map_error_diff_group_MJO.sh
-#    $sh 504_plot_map_error_diff_group_2vars.sh
-#    $sh 505_plot_map_error_diff_ymgroup_2vars.sh
- 
 )
 
 nparams=2
