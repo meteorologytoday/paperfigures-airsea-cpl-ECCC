@@ -12,23 +12,17 @@ import map_regions
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--input-dir', type=str, help='Input directory.', required=True)
 parser.add_argument('--map-projection-name', type=str, help='Map projection', required=True, choices=["PlateCarree", "Orthographic"])
-parser.add_argument('--model-versions', type=str, nargs="+", help='Input directory.', required=True)
+parser.add_argument('--model-version', type=str, help='Input directory.', required=True)
 parser.add_argument('--varset',  type=str, help='Input directory.', default="surf_inst")
 parser.add_argument('--varname', type=str, help='Input directory.', default="mean_sea_level_pressure")
-
-parser.add_argument('--cntr-varset',  type=str, help='Input directory.', default=None)
-parser.add_argument('--cntr-varname', type=str, help='Input directory.', default=None)
-parser.add_argument('--cntr-level', type=int, help='Selected level if data is 3D.', default=None)
 
 parser.add_argument('--extra-title', type=str, help='Input directory.', default="")
 parser.add_argument('--category', type=str, nargs="+", help='categories needs to be count', required=True)
 parser.add_argument('--category-label', type=str, help='categories needs to be count', default=None)
 parser.add_argument('--start-time-label', type=str, help='categories needs to be count', default=None)
 parser.add_argument('--level', type=int, help='Selected level if data is 3D.', default=None)
-parser.add_argument('--pval-threshold', type=float, help='Month to be processed.', default=0.1)
 parser.add_argument('--lead-window', type=int, help='Pentad to be processed.', required=True)
 parser.add_argument('--output', type=str, help='Output directory.', default="")
-#parser.add_argument('--output-error', type=str, help='Output directory.', default="")
 parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of latitude', default=[-90, 90])
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
 parser.add_argument('--paper', type=int, default=0)
@@ -45,11 +39,8 @@ args = parser.parse_args()
 
 print(args)
 
-has_cntr = (args.cntr_varset is not None) and (args.cntr_varname is not None)
-
 args.paper = args.paper == 1
 
-number_of_groups = len(args.model_versions)
 
 plot_type = None
 if number_of_groups == 1:
@@ -60,12 +51,10 @@ else:
     raise Exception("You need either 1 or 2 `--model-versions`.")
 
 data = []
-cntr_data = []
 var3D = False
-cntr_var3D = False
 
 selected_categories = args.category
-for model_version in args.model_versions:
+for model_version in [args.model_version,]:
     print("# model_version : ", model_version)
     ds, var3D = data_loader.loadVariable(
         args.input_dir,
@@ -93,7 +82,6 @@ for model_version in args.model_versions:
 
 
 print("cntr_var3D = ", cntr_var3D)
-
 
 # Do student T-test
 

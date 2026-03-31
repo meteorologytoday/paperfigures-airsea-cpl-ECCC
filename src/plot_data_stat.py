@@ -52,26 +52,3 @@ for model_version, stat in stats.items():
             
 
 
-"""
-import argparse
-parser = argparse.ArgumentParser(
-                    prog = 'make_ECCC_AR_objects.py',
-                    description = 'Postprocess ECCO data (Mixed-Layer integrated).',
-)
-
-#parser.add_argument('--start-months', type=int, nargs="+", required=True)
-parser.add_argument('--lead-pentads', type=int, default=6)
-parser.add_argument('--days-per-pentad', type=int, default=5)
-parser.add_argument('--year-rng', type=int, nargs=2, required=True)
-parser.add_argument('--output-root', type=str, required=True)
-parser.add_argument('--ECCC-postraw', type=str, required=True)
-parser.add_argument('--ECCC-varset', type=str, required=True)
-parser.add_argument('--ERA5-varset', type=str, required=True)
-parser.add_argument('--ERA5-freq', type=str, required=True)
-parser.add_argument('--levels', nargs="+", type=int, help="If variable is 3D.", default=None)
-parser.add_argument('--varname', type=str, required=True)
-parser.add_argument('--nproc', type=int, default=1)
-args = parser.parse_args()
-print(args)
-
-"""

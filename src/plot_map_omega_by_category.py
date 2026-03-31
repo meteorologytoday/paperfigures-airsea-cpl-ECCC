@@ -15,26 +15,18 @@ parser.add_argument('--map-projection-name', type=str, help='Map projection', re
 parser.add_argument('--model-versions', type=str, nargs="+", help='Input directory.', required=True)
 parser.add_argument('--varset',  type=str, help='Input directory.', default="surf_inst")
 parser.add_argument('--varname', type=str, help='Input directory.', default="mean_sea_level_pressure")
-
-parser.add_argument('--cntr-varset',  type=str, help='Input directory.', default=None)
-parser.add_argument('--cntr-varname', type=str, help='Input directory.', default=None)
-parser.add_argument('--cntr-level', type=int, help='Selected level if data is 3D.', default=None)
-
 parser.add_argument('--extra-title', type=str, help='Input directory.', default="")
 parser.add_argument('--category', type=str, nargs="+", help='categories needs to be count', required=True)
 parser.add_argument('--category-label', type=str, help='categories needs to be count', default=None)
 parser.add_argument('--start-time-label', type=str, help='categories needs to be count', default=None)
 parser.add_argument('--level', type=int, help='Selected level if data is 3D.', default=None)
-parser.add_argument('--pval-threshold', type=float, help='Month to be processed.', default=0.1)
 parser.add_argument('--lead-window', type=int, help='Pentad to be processed.', required=True)
 parser.add_argument('--output', type=str, help='Output directory.', default="")
-#parser.add_argument('--output-error', type=str, help='Output directory.', default="")
 parser.add_argument('--plot-lat-rng', type=float, nargs=2, help='Plot range of latitude', default=[-90, 90])
 parser.add_argument('--plot-lon-rng', type=float, nargs=2, help='Plot range of latitude', default=[0, 360])
 parser.add_argument('--paper', type=int, default=0)
 parser.add_argument('--font-size-factor', type=float, default=None)
 parser.add_argument('--plot-region-box', type=str, default="none")
-
 parser.add_argument('--thumbnail-numbering-style', type=str, default="abc", choices=["abc", "123"])
 parser.add_argument('--thumbnail-numbering-Emean', type=int, default=-1)
 parser.add_argument('--window-name', type=str, default="window")
@@ -45,24 +37,12 @@ args = parser.parse_args()
 
 print(args)
 
-has_cntr = (args.cntr_varset is not None) and (args.cntr_varname is not None)
-
 args.paper = args.paper == 1
 
 number_of_groups = len(args.model_versions)
 
-plot_type = None
-if number_of_groups == 1:
-    plot_type = "one_group"
-elif number_of_groups == 2:
-    plot_type = "diff_group"
-else:
-    raise Exception("You need either 1 or 2 `--model-versions`.")
-
 data = []
-cntr_data = []
 var3D = False
-cntr_var3D = False
 
 selected_categories = args.category
 for model_version in args.model_versions:
@@ -75,107 +55,14 @@ for model_version in args.model_versions:
         selected_categories, 
         args.lead_window,
         args.level,
+        omega = True,
     )   
     data.append(ds)
     
-    if has_cntr:
-        ds, cntr_var3D = data_loader.loadVariable(
-            args.input_dir,
-            model_version,
-            args.cntr_varset,
-            args.cntr_varname,
-            selected_categories, 
-            args.lead_window,
-            args.cntr_level,
-        )
-        cntr_data.append(ds)
-
-
-
-print("cntr_var3D = ", cntr_var3D)
-
-
-# Do student T-test
-
 if number_of_groups == 1:
     diff_ds = data[0]
 elif number_of_groups == 2:
     diff_ds = data[1] - data[0]
-
-ds_ref = data[0]
-
-if has_cntr:
-    if number_of_groups == 1:
-        diff_ds_cntr = cntr_data[0]
-    elif number_of_groups == 2:
-        diff_ds_cntr = cntr_data[1] - cntr_data[0]
-
-
-pval = np.zeros_like(diff_ds["total_Estd"])
-#pval_Eabs = np.zeros_like(diff_ds["total_Eabsstd"])
-
-
-if number_of_groups == 2:
-
-    print("Compute p values for Emean")
-
-    npdata = []
-
-    for i in range(2):
-        npdata.append(dict(
-            mean = data[i]["total_Emean"].to_numpy(),
-            std  = data[i]["total_Estd"].to_numpy(),
-            ddof = np.max(data[i]["total_ddof"].to_numpy()),
-        ))
-     
-    for j in range(ds_ref.dims["latitude"]):
-        for i in range(ds_ref.dims["longitude"]):
-            
-            _tmp = scipy.stats.ttest_ind_from_stats(
-                mean1 = npdata[0]["mean"][j, i],
-                std1  = npdata[0]["std"][j, i],
-                nobs1 = npdata[0]["ddof"], #* 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                mean2 = npdata[1]["mean"][j, i],
-                std2  = npdata[1]["std"][j, i],
-                nobs2 = npdata[1]["ddof"],# * 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                equal_var = False,
-                alternative = "two-sided",
-            )
-            
-            pval[j, i] = _tmp.pvalue
-            
-
-
-
-    """
-    print("Compute p values for Eabs")
-
-    npdata = []
-    for i in range(2):
-        npdata.append(dict(
-            mean = data[i]["total_Eabsmean"].to_numpy(),
-            std  = data[i]["total_Eabsstd"].to_numpy(),
-            ddof = np.max(data[i]["total_ddof"].to_numpy()),
-        ))
-        
-    for j in range(ds_ref.dims["latitude"]):
-        for i in range(ds_ref.dims["longitude"]):
-            
-            _tmp = scipy.stats.ttest_ind_from_stats(
-                mean1 = npdata[0]["mean"][j, i],
-                std1  = npdata[0]["std"][j, i],
-                nobs1 = npdata[0]["ddof"], #* 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                mean2 = npdata[1]["mean"][j, i],
-                std2  = npdata[1]["std"][j, i],
-                nobs2 = npdata[1]["ddof"],# * 0 + len(selected_years) * len(selected_months) * 4 * 4, # 4 members, weekly
-                equal_var = False,
-                alternative = "two-sided",
-            )
-            
-            pval_Eabs[j, i] = _tmp.pvalue
-            
-    """
-
 
 def drop_element(arr, drop_elm):
     new_arr = []
@@ -186,10 +73,7 @@ def drop_element(arr, drop_elm):
 
         new_arr.append(elm)
 
-
     return np.array(new_arr)
-
-
 
 plot_infos = dict(
 
@@ -457,31 +341,8 @@ if args.paper:
             thumbnail_str = "({number:d}) ".format(
                 number = args.thumbnail_numbering_Emean + 1,
             )
-    
-    cntr_title_str=""
-    if has_cntr:
-        
-        label_cntr = plot_infos[args.cntr_varname]["label"]
-        if cntr_var3D:
-            label_cntr = label_cntr % (args.cntr_level,)
-
-
-        if number_of_groups == 1:
-            cntr_title_str = " (shading),\n$ B ($%s$; $%s$)$ (contour)" % (
-                label_cntr,
-                start_time_label,
-                args.lead_window+1,
-            )
-        
-        elif number_of_groups == 2:
-            cntr_title_str = " (shading),\n$\\Delta B ($%s$; $%s$, $%s$ = %d)$ (contour)" % (
-                label_cntr,
-                start_time_label,
-                args.window_name,
-                args.lead_window+1,
-            )
-
-
+    cntr_title_str = ""
+ 
     if number_of_groups == 1:
         _ax.set_title("%s$ B ($%s$; $%s$, $%s$ = %d)$%s" % (
             thumbnail_str,
@@ -536,13 +397,6 @@ mappable = _ax.contourf(
     transform=map_transform,
 )
 
-
-if has_cntr:
-
-    cntr_plot_info = plot_infos[args.cntr_varname]
-    _cntr = diff_ds_cntr["total_Emean"].to_numpy() / cntr_plot_info["factor"]
-    cs = _ax.contour(coords["longitude"], coords["latitude"], _cntr, levels=cntr_plot_info["contour_levels"], colors="k",linewidths=2, transform=map_transform, alpha=0.8, zorder=10)
-    _ax.clabel(cs, fmt="%.1f")
 
 #_contour = pval
 #cs = _ax.contour(coords["longitude"], coords["latitude"], _contour, levels=[0.1,], colors="k", linestyles='-',linewidths=1, transform=proj, alpha=0.8, zorder=10)
@@ -629,215 +483,3 @@ if args.output != "":
 
 print("Finished.")
 
-"""
-
-if args.output_error != "":
-
-
-    print("Plotting error differnce")
-
-    ncol = 1
-    nrow = 1
-
-
-    figsize, gridspec_kw = tool_fig_config.calFigParams(
-        w = w,
-        h = h,
-        wspace = 1.0,
-        hspace = 0.5,
-        w_left = 1.0,
-        w_right = 2.5,
-        h_bottom = 1.0,
-        h_top = 1.0,
-        ncol = ncol,
-        nrow = nrow,
-    )
-
-
-    fig, ax = plt.subplots(
-        nrow, ncol,
-        figsize=figsize,
-        subplot_kw=dict(projection=map_projection, aspect="auto"),
-        gridspec_kw=gridspec_kw,
-        constrained_layout=False,
-        squeeze=False,
-    )
-
-    cmap = cmocean.cm.balance
-
-
-    _ax = ax[0, 0]
-
-    plot_info = plot_infos[args.varname]
-    if args.paper:
-
-        label = plot_info["label"]
-        if var3D:
-            label = label % (args.level,)
-
-        if args.category[0] == "MJO":
-            start_time_label = "\\phi_{\\mathrm{MJO}}" 
-        elif args.category[0] == "nonMJO":
-            start_time_label = "\\phi_{\\mathrm{xMJO}}" 
-        else:
-            start_time_label = "\\phi"
-
-        thumbnail_str = ""
-        
-        if args.thumbnail_numbering_Eabs != -1:
-
-            if args.thumbnail_numbering_style == "abc":
-                thumbnail_str = "({number:s}) ".format(
-                    number = "abcdefghijklmnopqrstuvwxyz"[args.thumbnail_numbering_Eabs],
-                )
-            elif args.thumbnail_numbering_style == "123":
-                thumbnail_str = "({number:d}) ".format(
-                    number = args.thumbnail_numbering_Eabs + 1,
-                )
-    
- 
-        cntr_title_str=""
-        if has_cntr:
-            label_cntr = plot_infos[args.cntr_varname]["label"]
-            if cntr_var3D:
-                label_cntr = label_cntr % (args.cntr_level,)
-
-
-            if number_of_groups == 1:
-                cntr_title_str = " (shading),\n$ A ($%s$; $%s$, p = %d)$ (contour)" % (
-                    label_cntr,
-                    start_time_label,
-                    args.lead_window+1,
-                )
-
-            elif number_of_groups == 2:    
-                cntr_title_str = " (shading),\n$\\Delta A ($%s$; $%s$, p = %d)$ (contour)" % (
-                    label_cntr,
-                    start_time_label,
-                    args.lead_window+1,
-                )
-        
-        if number_of_groups == 1:
-            _ax.set_title("%s$ A ($%s$; %s, p = %d)$%s" % (
-                thumbnail_str,
-                label,
-                start_time_label,
-                args.lead_window+1,
-                cntr_title_str,
-            ), size=18 * font_size_factor)
-
-        elif number_of_groups == 2: 
-            _ax.set_title("%s$\\Delta A ($%s$; %s, p = %d)$%s" % (
-                thumbnail_str,
-                label,
-                start_time_label,
-                args.lead_window+1,
-                cntr_title_str,
-            ), size=18 * font_size_factor)
-
-
-    else:
-
-        if number_of_groups == 1:
-            _ax.set_title("[%s] abs category=%s" % (
-                args.model_versions[0],
-                ",".join(args.category),
-            ), size=18 * font_size_factor)
-
-
-        elif number_of_groups == 2:
-            _ax.set_title("[%s minus %s] abs category=%s" % (
-                args.model_versions[1],
-                args.model_versions[0],
-                ",".join(args.category),
-            ), size=18 * font_size_factor)
-
-    coords = diff_ds.coords
-
-    #diff_da = data[1]["total_Eabsmean"] - data[0]["total_Eabsmean"]
-    diff_da = diff_ds["total_Eabsmean"]
-
-    _shading = diff_da.to_numpy() / plot_info["factor"]
-    mappable = _ax.contourf(
-        coords["longitude"], coords["latitude"],
-        _shading,
-        levels=plot_info["shading_levels"] * 0.5,
-        cmap=cmap, 
-        extend="both", 
-        transform=map_transform,
-    )
-    
-    if number_of_groups == 2:
-        _dot = np.zeros_like(pval_Eabs)
-        _significant_idx =  (pval_Eabs < args.pval_threshold) 
-        _dot[ _significant_idx                 ] = 0.75
-        _dot[ np.logical_not(_significant_idx) ] = 0.25
-        cs = _ax.contourf(coords["longitude"], coords["latitude"], _dot, colors='none', levels=[0, 0.5, 1], hatches=[None, "//"], transform=map_transform)
-
-        # Remove the contour lines for hatches 
-        for _, collection in enumerate(cs.collections):
-            #collection.set_edgecolor(hatch_color)
-            collection.set_linewidth(0.)
-
-
-    for __ax in [_ax, ]: 
-
-        __ax.tick_params(axis='both', labelsize=15 * font_size_factor)
-
-        gl = __ax.gridlines(crs=map_transform, draw_labels=True,
-                          linewidth=1, color='gray', alpha=0.5, linestyle='--')
-
-        gl.xlabels_top   = False
-        gl.ylabels_right = False
-
-        #gl.xlocator = mticker.FixedLocator(np.arange(-180, 181, 30))
-        #gl.xlocator = mticker.FixedLocator([120, 150, 180, -150, -120])#np.arange(-180, 181, 30))
-        #gl.ylocator = mticker.FixedLocator([10, 20, 30, 40, 50])
-        
-        gl.xformatter = LONGITUDE_FORMATTER
-        gl.yformatter = LATITUDE_FORMATTER
-        gl.xlabel_style = {'size': 12*font_size_factor, 'color': 'black'}
-        gl.ylabel_style = {'size': 12*font_size_factor, 'color': 'black'}
-
-        __ax.set_global()
-        #__ax.gridlines()
-        __ax.coastlines(color='gray')
-
-        if projection_name == "PlateCarree":
-            __ax.set_extent([plot_lon_l, plot_lon_r, plot_lat_b, plot_lat_t], crs=map_transform)
-    
-        if args.plot_region_box == "circulation": 
-            map_regions.plotRegions(__ax, regions=["AL", "IL", "ASH"], transform=map_transform)
-
-        if args.plot_region_box == "ocean": 
-            map_regions.plotRegions(__ax, regions=["KCE", "GS",], transform=map_transform)
-
-
-
-    cax = tool_fig_config.addAxesNextToAxes(fig, _ax, "right", thickness=0.3, spacing=0.3, flag_ratio_thickness=False, flag_ratio_spacing=False)
-    cb = plt.colorbar(mappable, cax=cax, orientation="vertical", pad=0.00)
-    cb.ax.tick_params(axis='both', labelsize=15 * font_size_factor)
-
-    unit_str = "" if plot_info["unit"] == "" else " [ %s ]" % (plot_info["unit"],)
-
-    if args.paper:
-        label = unit_str
-    else:
-        label = plot_info["label"]
-        if var3D:
-            label = label % (args.level,)
-        
-        label = "%s\n%s" % (label, unit_str)
-
-    cb.ax.set_ylabel(label, size=25 * font_size_factor)
-
-
-    if args.output_error != "":
-
-        print("Saving output: ", args.output_error) 
-        fig.savefig(args.output_error, dpi=200)
-
-    print("Finished.")
-
-
-"""

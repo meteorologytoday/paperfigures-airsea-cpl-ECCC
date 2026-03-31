@@ -16,16 +16,21 @@ def loadVariable(
     lead_window,
     level,
     verbose=False,
+    omega=False,
 ):
+    has_regions = not omega
     var3D = False
     filenames = []
+    omega_str = "_omega" if omega else ""
+
     for category in selected_categories:
         filenames.append(
-            Path(input_dir) / model_version / "ECCC-S2S_{model_version:s}_{varset:s}::{varname:s}_category-{category:s}.nc".format(
+            Path(input_dir) / model_version / "ECCC-S2S{omega_str:s}_{model_version:s}_{varset:s}::{varname:s}_category-{category:s}.nc".format(
                 model_version = model_version,
                 varset  = varset,
                 varname = varname,
                 category = category,
+                omega_str = omega_str,
             )
         )
 
@@ -41,6 +46,10 @@ def loadVariable(
     ds_varnames = dict(
         Emean        = "%s_Emean" % varname,
         E2mean       = "%s_E2mean" % varname,
+    )
+
+    if has_regions:
+        ds_varnames.update(dict(
         #Eabsmean     = "%s_Eabsmean" % varname,
         #Eabs2mean    = "%s_Eabs2mean" % varname,
         REGMEANVARmean = "%s_REGMEANVARmean" % varname,
@@ -54,7 +63,7 @@ def loadVariable(
         #REGREFmean = "%s_REGREFmean" % varname,
         #REGREF2mean = "%s_REGREF2mean" % varname,
         
-    )
+        ))
     
 
     if "level" in ds[ds_varnames["Emean"]].dims:
@@ -100,37 +109,38 @@ def loadVariable(
 
     #total_Eabsstd = np.sqrt(total_Eabsvar).rename("total_Eabsstd")
 
-    # REGIONAL RMSE
-    total_REGMEANVARmean  = ds[ds_varnames["REGMEANVARmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGMEANVARmean")
-    total_REGMEANVAR2mean = ds[ds_varnames["REGMEANVAR2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGMEANVAR2mean")
-    total_REGMEANVARvar = total_REGMEANVAR2mean - total_REGMEANVARmean ** 2
-    total_REGMEANVARvar = total_REGMEANVARvar.rename("total_REGMEANVARvar")
-    total_REGMEANVARstderr = (total_REGMEANVARvar**0.5 / total_ddof**0.5).rename("total_REGMEANVARstderr")
-    #_total_RMSEvar = total_RMSEvar.to_numpy()
-    #print("Negative total_RMSEvar (possibly due to precision error): ", _total_RMSEvar[_total_RMSEvar < 0])
-    #print("Fix the small negative ones...")
-    #_total_RMSEvar[(np.abs(_total_RMSEvar) < 1e-5) & (_total_RMSEvar < 0)] = 0
-    #total_RMSEstd = np.sqrt(total_RMSEvar).rename("total_RMSEstd")
+    if has_regions:
+        # REGIONAL RMSE
+        total_REGMEANVARmean  = ds[ds_varnames["REGMEANVARmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGMEANVARmean")
+        total_REGMEANVAR2mean = ds[ds_varnames["REGMEANVAR2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGMEANVAR2mean")
+        total_REGMEANVARvar = total_REGMEANVAR2mean - total_REGMEANVARmean ** 2
+        total_REGMEANVARvar = total_REGMEANVARvar.rename("total_REGMEANVARvar")
+        total_REGMEANVARstderr = (total_REGMEANVARvar**0.5 / total_ddof**0.5).rename("total_REGMEANVARstderr")
+        #_total_RMSEvar = total_RMSEvar.to_numpy()
+        #print("Negative total_RMSEvar (possibly due to precision error): ", _total_RMSEvar[_total_RMSEvar < 0])
+        #print("Fix the small negative ones...")
+        #_total_RMSEvar[(np.abs(_total_RMSEvar) < 1e-5) & (_total_RMSEvar < 0)] = 0
+        #total_RMSEstd = np.sqrt(total_RMSEvar).rename("total_RMSEstd")
 
-    total_REGPATTVARmean  = ds[ds_varnames["REGPATTVARmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGPATTVARmean")
-    total_REGPATTVAR2mean = ds[ds_varnames["REGPATTVAR2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGPATTVAR2mean")
-    total_REGPATTVARvar = total_REGPATTVAR2mean - total_REGPATTVARmean ** 2
-    total_REGPATTVARvar = total_REGPATTVARvar.rename("total_REGPATTVARvar")
-    total_REGPATTVARstderr = (total_REGPATTVARvar**0.5 / total_ddof**0.5).rename("total_REGPATTVARstderr")
-    
- 
-    total_REGVARmean  = ds[ds_varnames["REGVARmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGVARmean")
-    total_REGVAR2mean = ds[ds_varnames["REGVAR2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGVAR2mean")
-    total_REGVARvar = (total_REGVAR2mean - total_REGVARmean ** 2).rename("total_REGVARvar")
-    total_REGVARstderr = (total_REGVARvar**0.5 / total_ddof**0.5).rename("total_REGVARstderr")
-   
-    #total_REGTOTmean   = ds[ds_varnames["REGTOTmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGTOTmean")
-    #total_REGTOT2mean  = ds[ds_varnames["REGTOT2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGTOT2mean")
-    #total_REGREFmean   = ds[ds_varnames["REGREFmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGREFmean")
-    #total_REGREF2mean  = ds[ds_varnames["REGREF2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGREF2mean")
+        total_REGPATTVARmean  = ds[ds_varnames["REGPATTVARmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGPATTVARmean")
+        total_REGPATTVAR2mean = ds[ds_varnames["REGPATTVAR2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGPATTVAR2mean")
+        total_REGPATTVARvar = total_REGPATTVAR2mean - total_REGPATTVARmean ** 2
+        total_REGPATTVARvar = total_REGPATTVARvar.rename("total_REGPATTVARvar")
+        total_REGPATTVARstderr = (total_REGPATTVARvar**0.5 / total_ddof**0.5).rename("total_REGPATTVARstderr")
+        
+     
+        total_REGVARmean  = ds[ds_varnames["REGVARmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGVARmean")
+        total_REGVAR2mean = ds[ds_varnames["REGVAR2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGVAR2mean")
+        total_REGVARvar = (total_REGVAR2mean - total_REGVARmean ** 2).rename("total_REGVARvar")
+        total_REGVARstderr = (total_REGVARvar**0.5 / total_ddof**0.5).rename("total_REGVARstderr")
+       
+        #total_REGTOTmean   = ds[ds_varnames["REGTOTmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGTOTmean")
+        #total_REGTOT2mean  = ds[ds_varnames["REGTOT2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGTOT2mean")
+        #total_REGREFmean   = ds[ds_varnames["REGREFmean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGREFmean")
+        #total_REGREF2mean  = ds[ds_varnames["REGREF2mean"]].weighted(ds["total_cnt"]).mean(dim="category").rename("total_REGREF2mean")
 
-    #total_REGTOTvar = (total_REGTOT2mean - total_REGTOTmean ** 2).rename("total_REGTOTvar")
-    #total_REGREFvar = (total_REGREF2mean - total_REGREFmean ** 2).rename("total_REGREFvar")
+        #total_REGTOTvar = (total_REGTOT2mean - total_REGTOTmean ** 2).rename("total_REGTOTvar")
+        #total_REGREFvar = (total_REGREF2mean - total_REGREFmean ** 2).rename("total_REGREFvar")
 
     new_ds = xr.merge([
         total_Emean,    total_Estd,      total_Estderr,
@@ -144,13 +154,20 @@ def loadVariable(
     new_ds = new_ds.assign_coords(longitude=new_longitude)
 
     # total_cnt has to be done sepearately. Otherwise the isel longitude will append another dimension
-    new_ds = xr.merge([
-        new_ds, total_cnt, total_ddof,
-        total_REGMEANVARmean,  total_REGPATTVARmean, total_REGVARmean,
-        total_REGMEANVARvar, total_REGPATTVARvar, total_REGVARvar,
-        total_REGMEANVARstderr, total_REGPATTVARstderr, total_REGVARstderr,
-        #total_REGTOTvar, total_REGREFvar,
-    ])
+
+    if has_regions:
+        new_ds = xr.merge([
+            new_ds, total_cnt, total_ddof,
+            total_REGMEANVARmean,  total_REGPATTVARmean, total_REGVARmean,
+            total_REGMEANVARvar, total_REGPATTVARvar, total_REGVARvar,
+            total_REGMEANVARstderr, total_REGPATTVARstderr, total_REGVARstderr,
+            #total_REGTOTvar, total_REGREFvar,
+        ])
+    else:
+        new_ds = xr.merge([
+            new_ds, total_cnt, total_ddof,
+        ])
+
 
     return new_ds, var3D
 
