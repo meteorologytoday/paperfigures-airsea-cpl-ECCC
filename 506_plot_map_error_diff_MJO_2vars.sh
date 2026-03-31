@@ -22,13 +22,11 @@ region_params=(
     NPACATL PlateCarree   20  75  -250   25  1.5
     NPAC    PlateCarree    0  75    80  230  1.5
     NATL    PlateCarree    0  75   -90   25  1.5
-
 )
 region_nparams=7
 
 nparams=6
-#for GEPS6_group in GEPS6sub1 GEPS6sub2 GEPS6 ; do
-for GEPS6_group in GEPS6sub1 ; do
+for GEPS6_group in "${GEPS6_groups[@]}" ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 

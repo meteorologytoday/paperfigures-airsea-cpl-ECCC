@@ -12,6 +12,10 @@ batch_cnt_limit=21
 days_per_window=5
 lead_windows=6
 
+#days_per_window=1
+#lead_windows=5
+
+
 classify_method=ym
 classify_categories="ym"
 
@@ -28,7 +32,9 @@ params=(
 )
 
 region_params=(
-#    GLOBAL  PlateCarree  -90 90 -250 109.99 
+    GLOBAL  -90 90 0 360
+    NH        0  0 0 360
+    SH      -90 90 0 360
 #    AL     30 50 150 230
 #    IL     30 50 150 230
     KCE     30 50 150 230
@@ -43,6 +49,7 @@ region_params=(
 region_nparams=5
 
 nparams=3
+for GEPS6_group in "${GEPS6_groups[@]}" ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 
@@ -73,7 +80,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
         level_str="-${level}"
     fi 
 
-    output_dir=$fig_dir/fig_errorVar_ts_by_ym-$days_per_window/$region_name
+    output_dir=$fig_dir/fig_errorVar_ts_by_ym-$days_per_window/group-${GEPS6_group}/$region_name
     mkdir -p $output_dir
 
     input_dir=$data_dir/analysis/output_analysis_map_by_ym_window-${days_per_window}-leadwindow-${lead_windows}
@@ -113,7 +120,11 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 
         if [ "$region_name" = "GS" ]; then
             numbering=$(( $numbering + 5 ))
-        fi  
+        elif [ "$region_name" = "NH" ]  ; then
+            numbering=$(( $numbering + 1 ))
+        elif [ "$region_name" = "SH" ]  ; then
+            numbering=$(( $numbering + 2 ))
+        fi 
         
         if [ -f "$output" ] && [ -f "$output_error" ] ; then
             echo "Output file $output and $output_error exist. Skip."
@@ -121,7 +132,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             python3 src/plot_timeseries_prediction_error_diff_group_by_category.py \
                 --paper $paper                              \
                 --input-dir $input_dir                      \
-                --model-versions GEPS5 GEPS6sub1            \
+                --model-versions GEPS5 $GEPS6_group         \
                 --category $categories                      \
                 --category-label "$category_label"          \
                 --lead-window-range 0 4                     \
@@ -146,6 +157,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
         fi
         
     done
+done
 done
 done
 

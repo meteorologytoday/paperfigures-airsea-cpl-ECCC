@@ -8,25 +8,19 @@ batch_cnt_limit=11
 #batch_cnt_limit=1
 
 
-
-
-days_per_window=5
-lead_windows=6
-
-#days_per_window=1
-#lead_windows=5
-
-
+window_params=(
+    1 5
+    5 6
+)
+n_window_params=2
 
 params=(
-    
+    surf_avg sst        0
+    surf_inst msl       0
     AR IVT            0
     AR IWV            0
-    
     UVTZ gh           850
     UVTZ gh           500
-#    surf_inst msl       0
-    surf_avg sst        0
 
 
 #============================
@@ -52,10 +46,17 @@ region_params=(
 region_nparams=7
 
 nparams=3
-#for GEPS6_group in GEPS6sub1 GEPS6sub2 GEPS6 ; do
-for GEPS6_group in GEPS6sub1 ; do #GEPS6sub1offset1  ; do
+for (( k=0 ; k < $(( ${#window_params[@]} / $n_window_params )) ; k++ )); do
+    days_per_window="${window_params[$(( k * $n_window_params + 0 ))]}"
+    lead_windows="${window_params[$(( k * $n_window_params + 1 ))]}"
+   
+    echo ":: days_per_window = $days_per_window"
+    echo ":: lead_windows = $lead_windows"
+
+for GEPS6_group in "${GEPS6_groups[@]}" ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
+
 
     ECCC_varset="${params[$(( i * $nparams + 0 ))]}"
     varname="${params[$(( i * $nparams + 1 ))]}"
@@ -109,7 +110,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             done
         done
  
-        for lead_window in $( seq 0 2 ); do #$(( $lead_windows - 1 )) )  ; do
+        for lead_window in $( seq 0 5 ); do #$(( $lead_windows - 1 )) )  ; do
         #for lead_window in $( seq 0 2 ) ; do
            
             m_str=$( echo "$selected_months" | sed -r "s/ /,/g" ) 
@@ -151,6 +152,13 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             if [ -f "$output" ] ; then
                 echo "Output file $output and $output_error exist. Skip."
             else
+                window_name="window"
+                if [ "$days_per_window" = "5" ]; then
+                    window_name="pentad"
+                elif [ "$days_per_window" = "1" ]; then
+                    window_name="day"
+                fi
+
                 python3 src/plot_map_prediction_error_diff_group_by_category.py \
                     --paper $paper \
                     --input-dir $input_dir \
@@ -168,6 +176,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
                     --plot-region-box $plot_region_box \
                     --plot-lat-rng $region_lat_min $region_lat_max \
                     --plot-lon-rng $region_lon_min $region_lon_max \
+                    --window-name $window_name \
                     --font-size-factor $region_font_size_factor    & 
 
 #                    --plot-lat-rng 0 65    \
@@ -185,6 +194,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             
         done
     done
+done
 done
 done
 done

@@ -25,4 +25,6 @@ year_end=2017
 
 #year_end=2014
 
-
+GEPS6_groups=(
+    GEPS6sub1
+)

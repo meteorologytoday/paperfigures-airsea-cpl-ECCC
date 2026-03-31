@@ -11,10 +11,13 @@ days_per_window=5
 lead_windows=6
 
 params=(
+    surf_hf_avg mslhf 0
     AR IVT              0
+    AR IWV              0
     surf_avg sst        0
     surf_inst msl       0
     UVTZ gh           500
+    UVTZ gh           850
 )
 
 region_params=(
@@ -28,6 +31,7 @@ region_params=(
 region_nparams=5
 
 nparams=3
+for GEPS6_group in "${GEPS6_groups[@]}" ; do
 for (( i=0 ; i < $(( ${#params[@]} / $nparams )) ; i++ )); do
 for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
 
@@ -58,7 +62,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
         level_str="-${level}"
     fi 
 
-    output_dir=$fig_dir/fig_errorVar_ts_by_strictMJO-$days_per_window/$region_name
+    output_dir=$fig_dir/fig_errorVar_ts_by_strictMJO-$days_per_window/group-${GEPS6_group}/$region_name
     mkdir -p $output_dir
 
     input_dir=$data_dir/analysis/output_analysis_map_by_strictMJO_window-${days_per_window}-leadwindow-${lead_windows}
@@ -81,6 +85,15 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             category_label='$\phi_{\mathrm{P5678}}$'
         fi 
 
+        if [ "$region_name" = "KCE" ] ; then
+            if [ "$varname" = "IWV" ] ; then
+                numbering=$(( $numbering + 3 ))
+                decomp=yes
+            elif [ "$varname" = "mslhf" ] ; then
+                numbering=$(( $numbering + 3 ))
+                decomp=yes
+            fi
+        fi
 
         if [ -f "$output" ] && [ -f "$output_error" ] ; then
             echo "Output file $output and $output_error exist. Skip."
@@ -88,7 +101,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
             python3 src/plot_timeseries_prediction_error_diff_group_by_category.py \
                 --paper $paper                      \
                 --input-dir $input_dir              \
-                --model-versions GEPS5 GEPS6sub1    \
+                --model-versions GEPS5 $GEPS6_group \
                 --category $categories              \
                 --category-label "$category_label"  \
                 --lead-window-range 0 4             \
@@ -115,6 +128,7 @@ for (( j=0 ; j < $(( ${#region_params[@]} / $region_nparams )) ; j++ )); do
         fi
         
     done
+done
 done
 done
 

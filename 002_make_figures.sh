@@ -28,6 +28,7 @@ plot_codes=(
     $sh 506_plot_map_error_diff_MJO_2vars.sh
     $sh 601_plot_timeseries.sh
     $sh 602_plot_timeseries_by_MJO.sh
+    $sh 850_make_category.sh
 )
 
 nparams=2
