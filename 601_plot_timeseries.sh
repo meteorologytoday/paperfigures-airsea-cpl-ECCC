@@ -6,15 +6,10 @@ source 000_setup.sh
 #year_beg=2010
 
 fig_fmt=svg
-batch_cnt_limit=21
-#batch_cnt_limit=1
+batch_cnt_limit=2
 
 days_per_window=5
 lead_windows=6
-
-#days_per_window=1
-#lead_windows=5
-
 
 classify_method=ym
 classify_categories="ym"

@@ -4,7 +4,7 @@ source 999_trapkill.sh
 source 000_setup.sh
 
 fig_fmt=svg
-batch_cnt_limit=10
+batch_cnt_limit=2
 
 
 days_per_window=5
